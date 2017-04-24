@@ -1,0 +1,59 @@
+### Enviroment File for XXX based images
+
+resource_registry:
+
+  #####
+  ## Openstack
+  #####
+  # Instances
+  "HeatLib::Instance::Basic":                       lib/openstack/instance/basic_instance.yaml
+  "HeatLib::Instance::VolumeBoot":                  lib/openstack/instance/basic_instance_boot_volume.yaml
+  "HeatLib::Instance::WithVolumes":                 lib/openstack/instance/basic_instance_with_volumes.yaml
+  "HeatLib::Instance::LoadBalanced":                lib/openstack/instance/loadbalanced_instance.yaml
+
+  # SecurityGroups
+  "HeatLib::SecurityGroups::Generic":               lib/openstack/security-groups/generic.yaml
+  "HeatLib::SecurityGroups::ICMP":                  lib/openstack/security-groups/icmp.yaml
+
+  # Networks
+  "HeatLib::Network::FullStack":                    lib/openstack/network/full_stack.yaml
+  "HeatLib::Network::FloatingIP":                   lib/openstack/network/floating_ip.yaml
+
+  # LoadBalancer
+  "HeatLib::LoadBalancer::V1":                      lib/openstack/loadbalancer/tcp_lbaas_v1.yaml
+
+  # Volumes
+  "HeatLib::Volume::Basic":                         lib/openstack/volume/basic_volume.yaml
+
+  # Cluster 
+  "HeatLib::Cluster::Basic":                        ../lib/openstack/cluster/basic_cluster.yaml
+
+  #####
+  ## OS Specific Software Configuration Resources
+  #####
+  "HeatLib::SoftwareConfig::VolumeMount":           lib/software-configs/XXX/volume_mount.yaml
+  "HeatLib::SoftwareConfig::DisableSelinux":        lib/software-configs/XXX/disable_selinux.yaml
+  "HeatLib::SoftwareConfig::SSHAuthPassword":       lib/software-configs/XXX/ssh_auth_password.yaml
+  "HeatLib::SoftwareConfig::User":                  lib/software-configs/XXX/user.yaml
+  "HeatLib::SoftwareConfig::HTTP":                  lib/software-configs/XXX/httpd.yaml
+  "HeatLib::SoftwareConfig::HTTP::ReverseProxy":    lib/software-configs/XXX/httpd_reverse_proxy.yaml
+  "HeatLib::SoftwareConfig::MySQL":                 lib/software-configs/XXX/mysql.yaml
+  "HeatLib::SoftwareConfig::PostgreSQL":            lib/software-configs/XXX/postgres.yaml
+  "HeatLib::SoftwareConfig::Latex":                 lib/software-configs/XXX/latex.yaml
+  "HeatLib::SoftwareConfig::NodeJS":                lib/software-configs/XXX/nodejs.yaml
+  "HeatLib::SoftwareConfig::R":                     lib/software-configs/XXX/r.yaml
+  "HeatLib::SoftwareConfig::RServer":               lib/software-configs/XXX/rserver.yaml
+  "HeatLib::SoftwareConfig::RDesktop":              lib/software-configs/XXX/rserver.yaml
+  "HeatLib::SoftwareConfig::Java":                  lib/software-configs/XXX/java.yaml
+  "HeatLib::SoftwareConfig::Tomcat":                lib/software-configs/XXX/tomcat.yaml
+  "HeatLib::SoftwareConfig::EPEL":                  lib/software-configs/XXX/epel.yaml
+  "HeatLib::SoftwareConfig::x2goserver":            lib/software-configs/XXX/x2goserver.yaml
+  "HeatLib::SoftwareConfig::Docker":                lib/software-configs/XXX/docker.yaml
+  "HeatLib::SoftwareConfig::Docker::Cloudera":      lib/software-configs/XXX/docker_cloudera.yaml
+  "HeatLib::SoftwareConfig::Reboot":                lib/software-configs/XXX/reboot.yaml
+  "HeatLib::SoftwareConfig::ClouderaManager":       lib/software-configs/XXX/cloudera_manager.yaml
+
+  #####
+  ## OS Specific Heat Config Agent cloud-init installation template
+  #####
+  "Heat::InstallConfigAgent":                   lib/boot-config/XXX.yaml

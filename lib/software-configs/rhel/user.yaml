@@ -1,0 +1,95 @@
+heat_template_version: 2015-10-15
+
+description: >
+  Software Configuration for user addition
+
+parameters:
+
+  username:
+    type: string
+    description: User username
+
+  ssh_key:
+    type: string
+    description: SSH key for the user
+    default: "autogenerate"
+
+  password:
+    type: string
+    description: SSH key for the user
+    default: "autogenerate"
+
+  disabled:
+    type: string
+    description: Flag that enables or disables user login
+    default: "false"
+    constraints:
+      - allowed_values: ["true", "false"]
+
+  sudoer:
+    type: string
+    description: Flag that marks user as sudoer
+    default: "false"
+    constraints:
+      - allowed_values: ["true", "false"]
+
+  instance:
+    type: string
+    description: The instance where this Software Configuration should be applied
+    constraints:
+      - custom_constraint: nova.server
+
+resources:
+
+  config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: username
+        - name: ssh_key
+        - name: password
+        - name: disabled
+        - name: sudoer
+      outputs:
+        - name: status
+        - name: private_key
+        - name: password
+        - name: disabled
+        - name: sudoer
+      config: { get_file: scripts/user/configure.sh }
+
+  config_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config: { get_resource: config }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+      input_values:
+        username: { get_param: username }
+        ssh_key: { get_param: ssh_key }
+        password: { get_param: password }
+        disabled: { get_param: disabled }
+        sudoer: { get_param: sudoer }
+
+outputs:
+  status:
+    value: { get_attr: [config_deployment, status] }
+
+  stderr:
+    value: { get_attr: [config_deployment, deploy_stderr] }
+
+  sudoer:
+    value: { get_attr: [config_deployment, sudoer] }
+
+  disabled:
+    value: { get_attr: [config_deployment, disabled] }
+
+  password:
+    value: { get_attr: [config_deployment, password] }
+
+  username:
+    value: { get_attr: [config_deployment, username] }
+
+  private_key:
+    value: { get_attr: [config_deployment, private_key] }

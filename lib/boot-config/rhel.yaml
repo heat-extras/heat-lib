@@ -1,0 +1,63 @@
+heat_template_version: 2014-10-16
+
+description: |
+  This template install the agents required to enable the use of Software Deployments for an RHEL based image
+
+parameters:
+  http_proxy:
+    type: string
+    description: HTTP Proxy config in form of http://username:password@<PROXY_URL>:<PORT>
+    default: "none"
+
+  https_proxy:
+    type: string
+    description: HTTPS Proxy config in form of https://username:password@<PROXY_URL>:<PORT>
+    default: "none"
+
+resources:
+
+  install_agents:
+    type: "OS::Heat::SoftwareConfig"
+    properties:
+      group: ungrouped
+      config:
+        str_replace:
+          params:
+            $http_proxy_val: { get_param: http_proxy }
+            $https_proxy_val: { get_param: https_proxy }
+          template: {get_file: scripts/rhel/install.sh}
+
+  configure_agents:
+    type: "OS::Heat::SoftwareConfig"
+    properties:
+      group: ungrouped
+      config:
+        str_replace:
+          params:
+            $heat_config_script: {get_file: elements/heat-config/os-refresh-config/configure.d/55-heat-config}
+            $heat_config_notify: {get_file: elements/heat-config/bin/heat-config-notify}
+            $hook_script: {get_file: elements/heat-config-script/install.d/hook-script.py}
+            $hook_ansible: {get_file: elements/heat-config-ansible/install.d/hook-ansible.py}
+            $hook_puppet: {get_file: elements/heat-config-puppet/install.d/hook-puppet.py}
+            $hook_salt: {get_file: elements/heat-config-salt/install.d/hook-salt.py}
+            $occ_conf: {get_file: scripts/common/os-collect-config.conf}
+            $orc_oac: {get_file: scripts/common/20-os-apply-config}
+          template: {get_file: scripts/common/configure_config_agent.sh}
+
+  start_agents:
+    type: "OS::Heat::SoftwareConfig"
+    properties:
+      group: ungrouped
+      config: {get_file: scripts/common/start_config_agent.sh}
+
+  agent_config:
+    type: "OS::Heat::MultipartMime"
+    properties:
+      parts:
+      - config: {get_resource: install_agents}
+      - config: {get_resource: configure_agents}
+      - config: {get_resource: start_agents}
+
+outputs:
+  config:
+    value: {get_resource: agent_config}

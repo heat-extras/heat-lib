@@ -1,0 +1,57 @@
+### Enviroment File for ubuntu based images
+
+resource_registry:
+
+  #####
+  ## Openstack
+  #####
+  # Instances
+  "HeatLib::Instance::Basic":                       ../lib/openstack/instance/basic_instance.yaml
+  "HeatLib::Instance::VolumeBoot":                  ../lib/openstack/instance/basic_instance_boot_volume.yaml
+  "HeatLib::Instance::WithVolumes":                 ../lib/openstack/instance/basic_instance_with_volumes.yaml
+  "HeatLib::Instance::LoadBalanced":                ../lib/openstack/instance/loadbalanced_instance.yaml
+
+  # SecurityGroups
+  "HeatLib::SecurityGroups::Generic":               ../lib/openstack/security-groups/generic.yaml
+  "HeatLib::SecurityGroups::ICMP":                  ../lib/openstack/security-groups/icmp.yaml
+
+  # Networks
+  "HeatLib::Network::FullStack":                    ../lib/openstack/network/full_stack.yaml
+  "HeatLib::Network::FloatingIP":                   ../lib/openstack/network/floating_ip.yaml
+
+  # LoadBalancer
+  "HeatLib::LoadBalancer::V1":                      ../lib/openstack/loadbalancer/tcp_lbaas_v1.yaml
+
+  # Volumes
+  "HeatLib::Volume::Basic":                         ../lib/openstack/volume/basic_volume.yaml
+
+  # Cluster 
+  "HeatLib::Cluster::Basic":                        ../lib/openstack/cluster/basic_cluster.yaml
+
+  #####
+  ## OS Specific Software Configuration Resources
+  #####
+  "HeatLib::SoftwareConfig::VolumeMount":           ../lib/software-configs/ubuntu/volume_mount.yaml
+  "HeatLib::SoftwareConfig::DisableSelinux":        ../lib/software-configs/ubuntu/disable_selinux.yaml
+  #"HeatLib::SoftwareConfig::SSHAuthPassword":       ../lib/software-configs/ubuntu/ssh_auth_password.yaml
+  #"HeatLib::SoftwareConfig::User":                  ../lib/software-configs/ubuntu/user.yaml
+  "HeatLib::SoftwareConfig::HTTP":                  ../lib/software-configs/ubuntu/httpd.yaml
+  "HeatLib::SoftwareConfig::HTTP::ReverseProxy":    ../lib/software-configs/ubuntu/httpd_reverse_proxy.yaml
+  "HeatLib::SoftwareConfig::MySQL":                 ../lib/software-configs/ubuntu/mysql.yaml
+  #"HeatLib::SoftwareConfig::PostgreSQL":            ../lib/software-configs/ubuntu/postgres.yaml
+  "HeatLib::SoftwareConfig::Latex":                 ../lib/software-configs/ubuntu/latex.yaml
+  #"HeatLib::SoftwareConfig::NodeJS":                ../lib/software-configs/ubuntu/nodejs.yaml
+  #"HeatLib::SoftwareConfig::R":                     ../lib/software-configs/ubuntu/r.yaml
+  #"HeatLib::SoftwareConfig::RServer":               ../lib/software-configs/ubuntu/rserver.yaml
+  #"HeatLib::SoftwareConfig::RDesktop":              ../lib/software-configs/ubuntu/rserver.yaml
+  #"HeatLib::SoftwareConfig::Java":                  ../lib/software-configs/ubuntu/java.yaml
+  #"HeatLib::SoftwareConfig::Tomcat":                ../lib/software-configs/ubuntu/tomcat.yaml
+  #"HeatLib::SoftwareConfig::EPEL":                  ../lib/software-configs/ubuntu/epel.yaml
+  #"HeatLib::SoftwareConfig::x2goserver":            ../lib/software-configs/ubuntu/x2goserver.yaml
+  #"HeatLib::SoftwareConfig::Reboot":                ../lib/software-configs/ubuntu/reboot.yaml
+  #"HeatLib::SoftwareConfig::ClouderaManager":       ../lib/software-configs/ubuntu/cloudera_manager.yaml
+
+  #####
+  ## OS Speciffic  Heat Config Agent Cloud-init Install Script
+  #####
+  "Heat::InstallConfigAgent":                        ../lib/boot-config/ubuntu.yaml

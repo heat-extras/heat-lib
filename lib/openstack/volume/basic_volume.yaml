@@ -1,0 +1,108 @@
+heat_template_version: 2015-10-15
+description: Creates a volume and attaches it to an instance.
+
+parameter_groups:
+
+parameters:
+
+  name:
+    type: string
+    description: The name of the volume
+    constraints:
+      - allowed_pattern: "[a-z][a-z0-9-]{1,}"
+
+  size:
+    type: number
+    description: The size of the volume in GB
+    constraints:
+      - range: { min: 1 }
+
+  instance:
+    type: string
+    description: The instance to attach the volume to
+    constraints:
+      - custom_constraint: nova.server
+
+resources:
+
+  basic_volume:
+    type: OS::Cinder::Volume
+    properties:
+      name: { get_param: name }
+      size: { get_param: size }
+
+  attachment:
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      volume_id: { get_resource: basic_volume }
+      instance_uuid: { get_param: instance }
+
+outputs:
+
+  volume_uuid:
+    description: The UUID of the newly created volume
+    value: { get_resource: basic_volume }
+
+  volume_attachments:
+    description: The list of attachments of the volume.
+    value: { get_attr: [ basic_volume, attachments ] }
+
+  volume_availability_zone:
+    description: The availability zone in which the volume is located.
+    value: { get_attr: [ basic_volume, availability_zone ] }
+
+  volume_bootable:
+    description: Boolean indicating if the volume can be booted or not.
+    value: { get_attr: [ basic_volume, bootable ] }
+
+  volume_created_at:
+    description: The timestamp indicating volume creation.
+    value: { get_attr: [ basic_volume, created_at ] }
+
+  volume_display_description:
+    description: Description of the volume.
+    value: { get_attr: [ basic_volume, display_description ] }
+
+  volume_display_name:
+    description: Name of the volume.
+    value: { get_attr: [ basic_volume, display_name ] }
+
+  volume_encrypted:
+    description: Boolean indicating if the volume is encrypted or not.
+    value: { get_attr: [ basic_volume, encrypted ] }
+
+  volume_metadata:
+    description: Key/value pairs associated with the volume.
+    value: { get_attr: [ basic_volume, metadata ] }
+
+  volume_metadata_values:
+    description: Key/value pairs associated with the volume in raw dict form.
+    value: { get_attr: [ basic_volume, metadata_values ] }
+
+  volume_show:
+    description: Detailed information about resource.
+    value: { get_attr: [ basic_volume, show ] }
+
+  volume_size:
+    description: The size of the volume in GB.
+    value: { get_attr: [ basic_volume, size ] }
+
+  volume_snapshot_id:
+    description: The snapshot the volume was created from, if any.
+    value: { get_attr: [ basic_volume, snapshot_id ] }
+
+  volume_source_volid:
+    description: The volume used as source, if any.
+    value: { get_attr: [ basic_volume, source_volid ] }
+
+  volume_status:
+    description: The current status of the volume.
+    value: { get_attr: [ basic_volume, status ] }
+
+  volume_type:
+    description: The type of the volume mapping to a backend, if any.
+    value: { get_attr: [ basic_volume, volume_type ] }
+
+  volume_attachment_show:
+    description: Detailed information about resource.
+    value: { get_attr: [ attachment, show ] }

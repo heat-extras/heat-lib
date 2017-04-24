@@ -1,0 +1,59 @@
+### Enviroment File for rhel based images
+
+resource_registry:
+
+  #####
+  ## Openstack
+  #####
+  # Instances
+  "HeatLib::Instance::Basic":                       ../lib/openstack/instance/basic_instance.yaml
+  "HeatLib::Instance::VolumeBoot":                  ../lib/openstack/instance/basic_instance_boot_volume.yaml
+  "HeatLib::Instance::WithVolumes":                 ../lib/openstack/instance/basic_instance_with_volumes.yaml
+  "HeatLib::Instance::LoadBalanced":                ../lib/openstack/instance/loadbalanced_instance.yaml
+
+  # SecurityGroups
+  "HeatLib::SecurityGroups::Generic":               ../lib/openstack/security-groups/generic.yaml
+  "HeatLib::SecurityGroups::ICMP":                  ../lib/openstack/security-groups/icmp.yaml
+
+  # Networks
+  "HeatLib::Network::FullStack":                    ../lib/openstack/network/full_stack.yaml
+  "HeatLib::Network::FloatingIP":                   ../lib/openstack/network/floating_ip.yaml
+
+  # LoadBalancer
+  "HeatLib::LoadBalancer::V1":                      ../lib/openstack/loadbalancer/tcp_lbaas_v1.yaml
+
+  # Volumes
+  "HeatLib::Volume::Basic":                         ../lib/openstack/volume/basic_volume.yaml
+
+  # Clusters
+  "HeatLib::Cluster::Basic":                        ../lib/openstack/cluster/basic_cluster.yaml
+  "HeatLib::Cluster::WithVolumes":                  ../lib/openstack/cluster/basic_cluster_with_volumes.yaml
+  "HeatLib::Cluster::VolumeBoot":                   ../lib/openstack/cluster/basic_cluster_boot_volume.yaml
+
+  #####
+  ## OS Specific Software Configuration Resources
+  #####
+  "HeatLib::SoftwareConfig::VolumeMount":           ../lib/software-configs/rhel/volume_mount.yaml
+  "HeatLib::SoftwareConfig::DisableSelinux":        ../lib/software-configs/rhel/disable_selinux.yaml
+  "HeatLib::SoftwareConfig::SSHAuthPassword":       ../lib/software-configs/rhel/ssh_auth_password.yaml
+  "HeatLib::SoftwareConfig::User":                  ../lib/software-configs/rhel/user.yaml
+  "HeatLib::SoftwareConfig::HTTP":                  ../lib/software-configs/rhel/httpd.yaml
+  "HeatLib::SoftwareConfig::HTTP::ReverseProxy":    ../lib/software-configs/rhel/httpd_reverse_proxy.yaml
+  "HeatLib::SoftwareConfig::MySQL":                 ../lib/software-configs/rhel/mysql.yaml
+  "HeatLib::SoftwareConfig::PostgreSQL":            ../lib/software-configs/rhel/postgres.yaml
+  "HeatLib::SoftwareConfig::Latex":                 ../lib/software-configs/rhel/latex.yaml
+  "HeatLib::SoftwareConfig::NodeJS":                ../lib/software-configs/rhel/nodejs.yaml
+  "HeatLib::SoftwareConfig::R":                     ../lib/software-configs/rhel/r.yaml
+  "HeatLib::SoftwareConfig::RServer":               ../lib/software-configs/rhel/rserver.yaml
+  "HeatLib::SoftwareConfig::RDesktop":              ../lib/software-configs/rhel/rserver.yaml
+  "HeatLib::SoftwareConfig::Java":                  ../lib/software-configs/rhel/java.yaml
+  "HeatLib::SoftwareConfig::Tomcat":                ../lib/software-configs/rhel/tomcat.yaml
+  "HeatLib::SoftwareConfig::EPEL":                  ../lib/software-configs/rhel/epel.yaml
+  "HeatLib::SoftwareConfig::x2goserver":            ../lib/software-configs/rhel/x2goserver.yaml
+  "HeatLib::SoftwareConfig::Reboot":                ../lib/software-configs/rhel/reboot.yaml
+  "HeatLib::SoftwareConfig::ClouderaManager":       ../lib/software-configs/rhel/cloudera_manager.yaml
+
+  #####
+  ## OS Speciffic  Heat Config Agent Cloud-init Install Script
+  #####
+  "Heat::InstallConfigAgent":                   ../lib/boot-config/rhel.yaml

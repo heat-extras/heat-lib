@@ -1,0 +1,59 @@
+heat_template_version: 2015-10-15
+
+description: >
+  Template for nodejs software config deployment
+
+parameters:
+
+  http_proxy:
+    type: string
+    description: The http proxy to be used during the package installation
+    default: "none"
+
+  https_proxy:
+    type: string
+    description: The https proxy to be used during the package installation
+    default: "none"
+
+  rpm_link:
+    type: string
+    description: The link for the RPM that will be used to install the nodejs version
+    default: "https://rpm.nodesource.com/setup_7.x"
+
+  instance:
+    type: string
+    description: The instance where this Software Configuration should be applied
+    constraints:
+      - custom_constraint: nova.server
+
+resources:
+
+  install:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: http_proxy
+        - name: https_proxy
+        - name: rpm_link
+      outputs:
+        - name: status
+      config: { get_file: scripts/nodejs/install.sh }
+
+  install_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config: { get_resource: install }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+      input_values:
+        http_proxy: { get_param: http_proxy }
+        https_proxy: { get_param: https_proxy }
+        rpm_link: { get_param: rpm_link }
+
+outputs:
+  install_status:
+    value: { get_attr: [install_deployment, status] }
+
+  install_stderr:
+    value: { get_attr: [install_deployment, deploy_stderr] }

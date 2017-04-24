@@ -1,0 +1,146 @@
+heat_template_version: 2015-10-15
+description: Testing the Basic Cluster with Boot Volume
+
+parameter_groups:
+
+parameters:
+
+  key:
+    type: string
+    description: SSH key to inject into the instance
+    constraints:
+      - custom_constraint: nova.keypair
+
+  image:
+    type: string
+    description: Image to deploy the instance from
+    constraints:
+      - custom_constraint: glance.image
+
+  flavor:
+    type: string
+    description: Flavor to use for the instance
+    constraints:
+      - custom_constraint: nova.flavor
+
+  external_network:
+    type: string
+    description: Network to attach the load balancer to
+    constraints:
+      - custom_constraint: neutron.network
+
+  dns_nameservers:
+    type: comma_delimited_list
+    description: List of DNS servers
+    default:
+      - 8.8.8.8
+      - 8.8.8.4
+
+  http_proxy:
+    description: HTTP Proxy for agents installation
+    type: string
+    default: "none"
+
+  https_proxy:
+    description: HTTPS Proxy for agents installation
+    type: string
+    default: "none"
+
+resources:
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+      name: router
+      external_gateway_info:
+        network: { get_param: external_network }
+
+  basic_cluster_networking1:
+    type: HeatLib::Network::FullStack
+    properties:
+      name: testcluster1
+      cidr: 192.168.0.0/24
+      external_network: { get_param: external_network }
+      dns_nameservers: { get_param: dns_nameservers }
+
+  basic_cluster_networking2:
+    type: HeatLib::Network::FullStack
+    properties:
+      name: testcluster2
+      cidr: 192.168.10.0/24
+      external_network: { get_param: external_network }
+      dns_nameservers: { get_param: dns_nameservers }
+
+  security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: test-security-group
+      rules:
+        - remote_ip_prefix: 0.0.0.0/0
+
+  software_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config: |
+        #!/bin/bash
+        echo "Hello World"
+
+  software_deployment_group:
+    type: OS::Heat::SoftwareDeploymentGroup
+    properties:
+      config: { get_resource: software_config }
+      servers: { get_attr: [ basic_cluster_with_software_deployment, cluster_attributes_uuid] }
+      signal_transport: HEAT_SIGNAL
+
+  basic_cluster_1:
+    type: HeatLib::Cluster::Basic
+    properties:
+      count: 2
+      name: basic1
+      key: { get_param: key }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      security_groups:
+        - { get_resource: security_group }
+      subnets:
+        - { get_attr: [basic_cluster_networking1, subnet_uuid] }
+
+  basic_cluster_2:
+    type: HeatLib::Cluster::Basic
+    properties:
+      count: 2
+      name: basic2
+      key: { get_param: key }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      security_groups:
+        - { get_resource: security_group }
+      subnets:
+        - { get_attr: [basic_cluster_networking2, subnet_uuid] }
+
+  basic_cluster_with_software_deployment:
+    type: HeatLib::Cluster::Basic
+    properties:
+      count: 2
+      name: basic-sd
+      key: { get_param: key }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      security_groups:
+        - { get_resource: security_group }
+      http_proxy: { get_param: http_proxy }
+      https_proxy: { get_param: https_proxy }
+      subnets:
+        - { get_attr: [basic_cluster_networking2, subnet_uuid] }
+
+outputs:
+
+  basic_cluster_1:
+    value: { get_attr: [basic_cluster_1, refs] }
+
+  basic_cluster_2:
+    value: { get_attr: [basic_cluster_2, refs] }
+
+  basic_cluster_with_software_deployment:
+    value: { get_attr: [basic_cluster_with_software_deployment, cluster_attributes_refs] }

@@ -1,0 +1,249 @@
+heat_template_version: 2015-10-15
+description: Basic Instance Test Deployment
+
+parameter_groups:
+
+parameters:
+
+  name:
+    type: string
+    description: Name of the instance
+    constraints:
+      - allowed_pattern: "[a-z][a-z0-9-]{1,}"
+
+  key:
+    type: string
+    description: SSH key to inject into the instance
+    constraints:
+      - custom_constraint: nova.keypair
+
+  image:
+    type: string
+    description: Image to deploy the instance from
+    constraints:
+      - custom_constraint: glance.image
+
+  flavor:
+    type: string
+    description: Flavor to use for the instance
+    constraints:
+      - custom_constraint: nova.flavor
+
+  external_network:
+    type: string
+    description: Network to attach the load balancer to
+    constraints:
+      - custom_constraint: neutron.network
+
+  http_proxy:
+    type: string
+    description: HTTP Proxy for agents installation
+    default: "none"
+
+  https_proxy:
+    type: string
+    description: HTTPS Proxy for agents installation
+    default: "none"
+
+  dns_nameservers:
+    type: comma_delimited_list
+    description: List of DNS servers
+    default:
+      - 8.8.8.8
+      - 8.8.8.4
+
+resources:
+
+  network1:
+    type: HeatLib::Network::FullStack
+    properties:
+      name: test-net1
+      cidr: 192.168.0.0/24
+      dns_nameservers: { get_param: dns_nameservers }
+      external_network: { get_param: external_network }
+
+  network2:
+    type: HeatLib::Network::FullStack
+    properties:
+      name: test-net2
+      cidr: 192.168.1.0/24
+      dns_nameservers: { get_param: dns_nameservers }
+      external_network: { get_param: external_network }
+
+  security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: test-security-group
+      rules:
+        - remote_ip_prefix: 0.0.0.0/0
+
+  software_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config: |
+        #!/bin/bash
+        msg="CREATION invoked at `date +"%d/%m/%Y %H:%M:%S:%N"`"
+        echo $msg >> /tmp/sw-deployment-actions
+
+  software_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config: { get_resource: software_config }
+      server: { get_attr: [ instance_with_software_deployment, instance_uuid ] }
+      signal_transport: HEAT_SIGNAL
+
+  assign_fip_basic:
+    type: HeatLib::Network::FloatingIP
+    properties:
+      external_network: { get_param: external_network }
+      port: { get_attr: [instance_basic, instance_addresses, test-net1, 0, port] }
+
+  assign_fip_multi:
+    type: HeatLib::Network::FloatingIP
+    properties:
+      external_network: { get_param: external_network }
+      port: { get_attr: [instance_multi_homed, instance_addresses, test-net1, 0, port] }
+
+  assign_fip_noconf:
+    type: HeatLib::Network::FloatingIP
+    properties:
+      external_network: { get_param: external_network }
+      port: { get_attr: [instance_no_config, instance_addresses, test-net1, 0, port] }
+
+  assign_fip_soft:
+    type: HeatLib::Network::FloatingIP
+    properties:
+      external_network: { get_param: external_network }
+      port: { get_attr: [instance_with_software_deployment, instance_addresses, test-net1, 0, port] }
+
+  instance_basic:
+    type: HeatLib::Instance::Basic
+    properties:
+      name:
+        list_join:
+            - '-'
+            - [ { get_param: name }, "basic-instance" ]
+      key: { get_param: key }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      subnets:
+        - { get_attr: [ network1, subnet_uuid] }
+      security_groups:
+        - default
+        - { get_resource: security_group }
+      http_proxy: { get_param: http_proxy }
+      https_proxy: { get_param: https_proxy }
+
+  instance_multi_homed:
+    type: HeatLib::Instance::Basic
+    properties:
+      name:
+        list_join:
+            - '-'
+            - [ { get_param: name }, "instance-multi-homed" ]
+      key: { get_param: key }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      subnets:
+        - { get_attr: [ network1, subnet_uuid] }
+        - { get_attr: [ network2, subnet_uuid] }
+      security_groups:
+        - default
+        - { get_resource: security_group }
+      http_proxy: { get_param: http_proxy }
+      https_proxy: { get_param: https_proxy }
+
+  instance_no_config:
+    type: HeatLib::Instance::Basic
+    properties:
+      name:
+        list_join:
+            - '-'
+            - [ { get_param: name }, "instance-no-config" ]
+      key: { get_param: key }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      subnets:
+        - { get_attr: [ network1, subnet_uuid] }
+      security_groups:
+        - default
+        - { get_resource: security_group }
+      http_proxy: { get_param: http_proxy }
+      https_proxy: { get_param: https_proxy }
+
+  instance_with_software_deployment:
+    type: HeatLib::Instance::Basic
+    properties:
+      name:
+        list_join:
+            - '-'
+            - [ { get_param: name }, "instance-with-software-deployment" ]
+      key: { get_param: key }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      subnets:
+        - { get_attr: [ network1, subnet_uuid] }
+      security_groups:
+        - default
+        - { get_resource: security_group }
+      http_proxy: { get_param: http_proxy }
+      https_proxy: { get_param: https_proxy }
+
+outputs:
+
+  uuid_instance:
+    description: UUID of the Instance
+    value: { get_attr: [instance_basic, instance_uuid] }
+
+  accessIPv4_instance:
+    description: The manually assigned alternative public IPv4 address of the server.
+    value: { get_attr: [instance_basic, instance_accessIPv4] }
+
+  accessIPv6_instance:
+    description: The manually assigned alternative public IPv6 address of the server.
+    value: { get_attr: [instance_basic, instance_accessIPv6] }
+
+  addresses_instance:
+    description: A dict of all network addresses with corresponding port_id. Each network will have two keys in dict, they are network name and network id.
+    value: { get_attr: [instance_basic, instance_addresses] }
+
+  fip_basic_instance:
+    description: Floating IP of the basic instance
+    value: { get_attr: [assign_fip_basic, floating_ip_address] }
+
+  fip_multi_instance:
+    description: Floating IP of the multi homed instance
+    value: { get_attr: [assign_fip_multi, floating_ip_address] }
+
+  fip_noconf_instance:
+    description: Floating IP of the no config instance
+    value: { get_attr: [assign_fip_noconf, floating_ip_address] }
+
+  fip_soft_instance:
+    description: Floating IP of the software config instance
+    value: { get_attr: [assign_fip_soft, floating_ip_address] }
+
+  console_urls_instance:
+    description: URLs of server''s consoles. To get a specific console type, the requested type can be specified as parameter to the get_attr function
+    value: { get_attr: [instance_basic, instance_console_urls] }
+
+  first_address_instance:
+    description: Convenience attribute to fetch the first assigned network address, or an empty string if nothing has been assigned at this time. Result may not be predictable if the server has addresses from more than one network.
+    value: { get_attr: [instance_basic, instance_first_address] }
+
+  instance_name_instance:
+    description: AWS compatible Instance name
+    value: { get_attr: [instance_basic, instance_instance_name] }
+
+  name_instance:
+    description: Name of the Instance
+    value: { get_attr: [instance_basic, instance_name] }
+
+  networks_instance:
+    description: A dict of assigned network addresses, Each network will have two keys in dict, they are network name and network id.
+    value: { get_attr: [instance_basic, instance_networks] }
+
+  show_instance:
+    description: Detailed information about resource.
+    value: { get_attr: [instance_basic, instance_show] }

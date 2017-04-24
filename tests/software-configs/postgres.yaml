@@ -1,0 +1,225 @@
+heat_template_version: 2015-10-15
+description: >
+  This is a standard template for deploying an instance with network connectivity,
+  and packages
+
+parameters:
+
+  ### Instance Parameters ###
+  name:
+    type: string
+    description: Name of the instance
+    constraints:
+      - allowed_pattern: "[a-z][a-z0-9-]{1,}"
+
+  key:
+    type: string
+    description: SSH key to inject into the instance
+    constraints:
+      - custom_constraint: nova.keypair
+
+  image:
+    type: string
+    description: Image to deploy the instance from
+    constraints:
+      - custom_constraint: glance.image
+
+  flavor:
+    type: string
+    description: Flavor to use for the instance
+    constraints:
+      - custom_constraint: nova.flavor
+
+  http_proxy:
+    type: string
+    description: HTTP Proxy for agents installation
+    default: "none"
+
+  https_proxy:
+    type: string
+    description: HTTPS Proxy for agents installation
+    default: "none"
+
+  ### Instance Access Parameters ###
+  ports:
+    label: Open Ports on instance
+    type: comma_delimited_list
+    default: "22,80,443,5432"
+
+  protocols:
+    label: Protocols for open ports
+    type: comma_delimited_list
+    default: "tcp,udp"
+
+  ### Networking Parameters ###
+  network_cidr:
+    type: string
+    description: CIDR for subnet defintion
+    default: 192.168.0.0/24
+
+  external_network:
+    type: string
+    description: The public network to connect to
+    constraints:
+      - custom_constraint: neutron.network
+
+  ### Volume Parameters ###
+  data_volume_size:
+    type: number
+    description: The size of the volume in GB
+    default: 10
+    constraints:
+          - range: { min: 1 }
+
+resources:
+
+  ### Network Connectivity ###
+  network_stack:
+    type: HeatLib::Network::FullStack
+    properties:
+      name: { get_param: name }
+      cidr: { get_param: network_cidr }
+      external_network: { get_param: external_network }
+
+  floating_ip:
+    type: HeatLib::Network::FloatingIP
+    properties:
+      external_network: { get_param: external_network }
+      port: { get_attr: [instance, instance_addresses, { get_attr: [ network_stack, network_uuid ] }, 0, port ] }
+
+
+  ### Access and Security ###
+  instance_access:
+    type: HeatLib::SecurityGroups::Generic
+    properties:
+      name: { get_param: name }
+      ports: { get_param: ports }
+      protocols: { get_param: protocols }
+
+  instance_access_icmp:
+    type: HeatLib::SecurityGroups::ICMP
+    properties:
+      name: { get_param: name }
+
+
+  ### Instance ###
+  instance:
+    type: HeatLib::Instance::Basic
+    depends_on: [instance_access, instance_access_icmp]
+    properties:
+      name: { get_param: name }
+      key: { get_param: key }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      subnets:
+        - { get_attr: [ network_stack, subnet_uuid ] }
+      security_groups:
+        - { get_attr: [ instance_access, security_group_uuid ] }
+        - { get_attr: [ instance_access_icmp, security_group_uuid ] }
+      http_proxy: { get_param: http_proxy }
+      https_proxy: { get_param: https_proxy }
+
+
+  ### Instance Volumes ###
+  home_volume:
+    type: HeatLib::Volume::Basic
+    properties:
+      name:
+        list_join: ['-', [{ get_param: name }, "home"]]
+      size: 10
+      instance: { get_attr: [ instance, instance_uuid ] }
+
+  data_volume:
+    type: HeatLib::Volume::Basic
+    properties:
+      name:
+        list_join: ['-', [{ get_param: name }, "data"]]
+      size: { get_param: data_volume_size }
+      instance: { get_attr: [ instance, instance_uuid ] }
+
+  ### Instance Software Configurations ###
+  # Home Volume Mount
+  home_volume_mount:
+    type: HeatLib::SoftwareConfig::VolumeMount
+    properties:
+      volume_id: { get_attr: [ home_volume, volume_uuid ] }
+      mount_path: "/home"
+      make_fs: "true"
+      instance: { get_attr: [ instance, instance_uuid ] }
+
+  # Data Volume Mount
+  data_volume_mount:
+    type: HeatLib::SoftwareConfig::VolumeMount
+    properties:
+      volume_id: { get_attr: [ data_volume, volume_uuid ] }
+      mount_path: "/data"
+      make_fs: "true"
+      instance: { get_attr: [ instance, instance_uuid ] }
+
+  # Disable Selinux
+  disable_selinux:
+    type: HeatLib::SoftwareConfig::DisableSelinux
+    properties:
+      instance: { get_attr: [ instance, instance_uuid ] }
+
+  # Allow password auth for SSH
+  ssh_with_password:
+    type: HeatLib::SoftwareConfig::SSHAuthPassword
+    properties:
+      instance: { get_attr: [ instance, instance_uuid ] }
+
+  package_postgres:
+    type: HeatLib::SoftwareConfig::PostgreSQL
+    properties:
+      instance: { get_attr: [ instance, uuid] }
+      postgres_password: "autogenerate"
+
+outputs:
+
+  floating_ip:
+    value: { get_attr: [ floating_ip, floating_ip_address ] }
+
+  home_volume_status:
+    value: { get_attr: [ home_volume_mount, status ] }
+
+  home_volume_stderr:
+    value: { get_attr: [ home_volume_mount, stderr ] }
+
+  data_volume_status:
+    value: { get_attr: [ data_volume_mount, status ] }
+
+  data_volume_stderr:
+    value: { get_attr: [ data_volume_mount, stderr ] }
+
+  disable_selinux_status:
+    value: { get_attr: [ disable_selinux, status ] }
+
+  disable_selinux_stderr:
+    value: { get_attr: [ disable_selinux, stderr ] }
+
+  ssh_with_password_status:
+    value: { get_attr: [ ssh_with_password, status ] }
+
+  ssh_with_password_stderr:
+    value: { get_attr: [ ssh_with_password, stderr ] }
+
+  package_postgres_install_status:
+    value: { get_attr: [ package_postgres, install_status ] }
+
+  package_postgres_install_stderr:
+    value: { get_attr: [ package_postgres, install_stderr ] }
+
+  package_postgres_config_status:
+    value: { get_attr: [ package_postgres, config_status ] }
+
+  package_postgres_config_stderr:
+    value: { get_attr: [ package_postgres, config_stderr ] }
+
+  package_postgres_password:
+    value: { get_attr: [ package_postgres, config_postgres_password ] }
+
+  package_postgres_start_status:
+    value: { get_attr: [ package_postgres, start_status ] }
+
+  package_postgres_start_stderr:
+    value: { get_attr: [ package_postgres, start_stderr ] }

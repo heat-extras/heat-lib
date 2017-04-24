@@ -1,0 +1,52 @@
+heat_template_version: 2015-10-15
+
+description: >
+  Template for latex software config deployment
+
+parameters:
+
+  http_proxy:
+    type: string
+    description: The http proxy to be used during the package installation
+    default: "none"
+
+  https_proxy:
+    type: string
+    description: The https proxy to be used during the package installation
+    default: "none"
+
+  instance:
+    type: string
+    description: The instance where this Software Configuration should be applied
+    constraints:
+      - custom_constraint: nova.server
+
+resources:
+
+  install:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: http_proxy
+        - name: https_proxy
+      outputs:
+        - name: status
+      config: { get_file: scripts/latex/install.sh }
+
+  install_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config: { get_resource: install }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+      input_values:
+        http_proxy: { get_param: http_proxy }
+        https_proxy: { get_param: https_proxy }
+
+outputs:
+  install_status:
+    value: { get_attr: [install_deployment, status] }
+
+  install_stderr:
+    value: { get_attr: [install_deployment, deploy_stderr] }

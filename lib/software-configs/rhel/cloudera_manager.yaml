@@ -1,0 +1,36 @@
+heat_template_version: 2015-10-15
+
+description: >
+  Base template for software config deployment
+
+parameters:
+
+  instance:
+    type: string
+    description: The instance where this Software Configuration should be applied
+    constraints:
+      - custom_constraint: nova.server
+
+resources:
+
+  install:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      outputs:
+        - name: status
+      config: { get_file: scripts/cloudera_manager/install.sh }
+
+  install_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config: { get_resource: install }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+
+outputs:
+  install_status:
+    value: { get_attr: [install_deployment, status] }
+
+  install_stderr:
+    value: { get_attr: [install_deployment, deploy_stderr] }

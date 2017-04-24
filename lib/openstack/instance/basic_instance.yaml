@@ -1,0 +1,133 @@
+heat_template_version: 2015-10-15
+description: >
+  This creates a basic instance with standard configuration
+
+parameters:
+
+  name:
+    type: string
+    description: Name of the instance
+    constraints:
+      - allowed_pattern: "[a-z][a-z0-9-]{1,}"
+
+  key:
+    type: string
+    description: SSH key to inject into the instance
+    constraints:
+      - custom_constraint: nova.keypair
+
+  image:
+    type: string
+    description: Image to deploy the instance from
+    constraints:
+      - custom_constraint: glance.image
+
+  flavor:
+    type: string
+    description: Flavor to use for the instance
+    constraints:
+      - custom_constraint: nova.flavor
+
+  subnets:
+    type: comma_delimited_list
+    description: List of subnets to connect the instance to
+
+  security_groups:
+    type: comma_delimited_list
+    description: List of security groups to attach to the instance
+    default: ["default"]
+
+  http_proxy:
+    type: string
+    description: HTTP Proxy for agents installation
+    default: "none"
+
+  https_proxy:
+    type: string
+    description: HTTPS Proxy for agents installation
+    default: "none"
+
+  scheduler_hints:
+    type: json
+    description: >
+      Arbitrary key-value pairs specified by the client to help boot a server
+    default: {}
+
+  software_config_transport:
+    type: string
+    default: POLL_SERVER_HEAT
+    constraints:
+      - allowed_values:
+          - POLL_SERVER_HEAT
+          - POLL_SERVER_CFN
+          - POLL_TEMP_URL
+          - ZAQAR_MESSAGE
+
+resources:
+
+  server_init:
+    type: Heat::InstallConfigAgent
+    properties:
+      http_proxy: { get_param: http_proxy }
+      https_proxy: { get_param: https_proxy }
+
+  basic_instance:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: name }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key }
+      networks:
+        repeat:
+          for_each:
+            <%subnet_name%>: { get_param: subnets }
+          template:
+            subnet: <%subnet_name%>
+      security_groups: { get_param: security_groups }
+      user_data_format: SOFTWARE_CONFIG
+      user_data: {get_attr: [ server_init, config ] }
+      scheduler_hints: { get_param: scheduler_hints }
+      software_config_transport: { get_param: software_config_transport }
+
+outputs:
+
+  instance_uuid:
+    description: UUID of the Instance
+    value: { get_resource: basic_instance }
+
+  instance_accessIPv4:
+    description: The manually assigned alternative public IPv4 address of the server.
+    value: { get_attr: [basic_instance, accessIPv4] }
+
+  instance_accessIPv6:
+    description: The manually assigned alternative public IPv6 address of the server.
+    value: { get_attr: [basic_instance, accessIPv6] }
+
+  instance_addresses:
+    description: A dict of all network addresses with corresponding port_id. Each network will have two keys in dict, they are network name and network id.
+    value: { get_attr: [basic_instance, addresses] }
+
+  instance_console_urls:
+    description: URLs of server''s consoles. To get a specific console type, the requested type can be specified as parameter to the get_attr function
+    value: { get_attr: [basic_instance, console_urls] }
+
+  instance_first_address:
+    description: Convenience attribute to fetch the first assigned network address, or an empty string if nothing has been assigned at this time. Result may not be predictable if the server has addresses from more than one network.
+    value: { get_attr: [basic_instance, first_address] }
+
+  instance_instance_name:
+    description: AWS compatible Instance name
+    value: { get_attr: [basic_instance, instance_name] }
+
+  instance_name:
+    description: Name of the Instance
+    value: { get_attr: [basic_instance, name] }
+
+  instance_networks:
+    description: A dict of assigned network addresses, Each network will have two keys in dict, they are network name and network id.
+    value: { get_attr: [basic_instance, networks] }
+
+  instance_show:
+    description: Detailed information about resource.
+    value: { get_attr: [basic_instance, show] }

@@ -1,0 +1,209 @@
+heat_template_version: 2015-10-15
+description: >
+  Creates a instance with a volume attached that boots from a specified image
+
+parameters:
+
+  name:
+    description: Name of the instance
+    type: string
+    constraints:
+      - allowed_pattern: "[a-z][a-z0-9-]{1,}"
+
+  key:
+    description: SSH key to inject into the instance
+    type: string
+    constraints:
+      - custom_constraint: nova.keypair
+
+  image:
+    description: Image to deploy the instance from
+    type: string
+    constraints:
+      - custom_constraint: glance.image
+
+  flavor:
+    description: Flavor to use for the instance
+    type: string
+    constraints:
+      - custom_constraint: nova.flavor
+
+  subnets:
+    description: List of subnets to connect the instance to
+    type: comma_delimited_list
+
+  security_groups:
+    description: List of security groups to attach to the instance
+    type: comma_delimited_list
+    default: ["default"]
+
+  volume_size:
+    description: Size of the volume
+    type: number
+    default: 100
+
+  http_proxy:
+    description: HTTP Proxy for agents installation
+    type: string
+    default: "none"
+
+  https_proxy:
+    description: HTTPS Proxy for agents installation
+    type: string
+    default: "none"
+
+  scheduler_hints:
+    type: json
+    description: >
+      Arbitrary key-value pairs specified by the client to help boot a server
+    default: {}
+
+  software_config_transport:
+    type: string
+    default: POLL_SERVER_HEAT
+    constraints:
+      - allowed_values:
+          - POLL_SERVER_HEAT
+          - POLL_SERVER_CFN
+          - POLL_TEMP_URL
+          - ZAQAR_MESSAGE
+
+resources:
+
+  server_init:
+    type: Heat::InstallConfigAgent
+    properties:
+      http_proxy: { get_param: http_proxy }
+      https_proxy: { get_param: https_proxy }
+
+  basic_instance:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: name }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key }
+      block_device_mapping_v2:
+        - volume_id: { get_resource: volume }
+          device_name: "/dev/vda"
+          delete_on_termination: "false"
+      networks:
+        repeat:
+          for_each:
+            <%subnet_name%>: { get_param: subnets }
+          template:
+            subnet: <%subnet_name%>
+      security_groups: { get_param: security_groups }
+      user_data_format: SOFTWARE_CONFIG
+      user_data: {get_attr: [ server_init, config ] }
+      scheduler_hints: { get_param: scheduler_hints }
+      software_config_transport: { get_param: software_config_transport }
+
+  volume:
+    type: OS::Cinder::Volume
+    properties:
+      name:
+        list_join: ['-', [ {get_param: name}, 'boot']]
+      size: { get_param: volume_size }
+      image: { get_param: image }
+
+outputs:
+
+  instance_uuid:
+    description: UUID of the Instance
+    value: { get_resource: basic_instance }
+
+  instance_accessIPv4:
+    description: The manually assigned alternative public IPv4 address of the server.
+    value: { get_attr: [basic_instance, accessIPv4] }
+
+  instance_accessIPv6:
+    description: The manually assigned alternative public IPv6 address of the server.
+    value: { get_attr: [basic_instance, accessIPv6] }
+
+  instance_addresses:
+    description: A dict of all network addresses with corresponding port_id. Each network will have two keys in dict, they are network name and network id.
+    value: { get_attr: [basic_instance, addresses] }
+
+  instance_console_urls:
+    description: URLs of server''s consoles. To get a specific console type, the requested type can be specified as parameter to the get_attr function
+    value: { get_attr: [basic_instance, console_urls] }
+
+  instance_first_address:
+    description: Convenience attribute to fetch the first assigned network address, or an empty string if nothing has been assigned at this time. Result may not be predictable if the server has addresses from more than one network.
+    value: { get_attr: [basic_instance, first_address] }
+
+  instance_instance_name:
+    description: AWS compatible Instance name
+    value: { get_attr: [basic_instance, instance_name] }
+
+  instance_name:
+    description: Name of the Instance
+    value: { get_attr: [basic_instance, name] }
+
+  instance_networks:
+    description: A dict of assigned network addresses, Each network will have two keys in dict, they are network name and network id.
+    value: { get_attr: [basic_instance, networks] }
+
+  instance_show:
+    description: Detailed information about resource.
+    value: { get_attr: [basic_instance, show] }
+
+  volume_attachments:
+    description: The list of attachments of the volume.
+    value: { get_attr: [volume, attachments] }
+
+  volume_availability_zone:
+    description: The availability zone in which the volume is located.
+    value: { get_attr: [volume, availability_zone] }
+
+  volume_bootable:
+    description: Boolean indicating if the volume can be booted or not.
+    value: { get_attr: [volume, bootable] }
+
+  volume_created_at:
+    description: The timestamp indicating volume creation.
+    value: { get_attr: [volume, created_at] }
+
+  volume_display_description:
+    description: Description of the volume.
+    value: { get_attr: [volume, display_description] }
+
+  volume_display_name:
+    description: Name of the volume.
+    value: { get_attr: [volume, display_name] }
+
+  volume_encrypted:
+    description: Boolean indicating if the volume is encrypted or not.
+    value: { get_attr: [volume, encrypted] }
+
+  volume_metadata:
+    description: Key/value pairs associated with the volume.
+    value: { get_attr: [volume, metadata] }
+
+  volume_metadata_values:
+    description: Key/value pairs associated with the volume in raw dict form.
+    value: { get_attr: [volume, metadata_values] }
+
+  volume_show:
+    description: Detailed information about resource.
+    value: { get_attr: [volume, show] }
+
+  volume_size:
+    description: The size of the volume in GB.
+    value: { get_attr: [volume, size] }
+
+  volume_snapshot_id:
+    description: The snapshot the volume was created from, if any.
+    value: { get_attr: [volume, snapshot_id] }
+
+  volume_source_volid:
+    description: The volume used as source, if any.
+    value: { get_attr: [volume, source_volid] }
+
+  volume_status:
+    description: The current status of the volume.
+    value: { get_attr: [volume, status] }
+
+  volume_volume_type:
+    description: The type of the volume mapping to a backend, if any.
+    value: { get_attr: [volume, volume_type] }

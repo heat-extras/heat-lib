@@ -1,0 +1,218 @@
+heat_template_version: 2015-10-15
+description: >
+  This is a standard template for deploying an instance with network connectivity,
+  and packages
+
+parameters:
+
+  ### Instance Parameters ###
+  name:
+    type: string
+    description: Name of the instance
+    constraints:
+      - allowed_pattern: "[a-z][a-z0-9-]{1,}"
+
+  key:
+    type: string
+    description: SSH key to inject into the instance
+    constraints:
+      - custom_constraint: nova.keypair
+
+  image:
+    type: string
+    description: Image to deploy the instance from
+    constraints:
+      - custom_constraint: glance.image
+
+  flavor:
+    type: string
+    description: Flavor to use for the instance
+    constraints:
+      - custom_constraint: nova.flavor
+
+  http_proxy:
+    type: string
+    description: HTTP Proxy for agents installation
+    default: "none"
+
+  https_proxy:
+    type: string
+    description: HTTPS Proxy for agents installation
+    default: "none"
+
+  ### Instance Access Parameters ###
+  ports:
+    label: Open Ports on instance
+    type: comma_delimited_list
+    default: "22,80,443"
+
+  protocols:
+    label: Protocols for open ports
+    type: comma_delimited_list
+    default: "tcp,udp"
+
+  ### Networking Parameters ###
+  network_cidr:
+    type: string
+    description: CIDR for subnet defintion
+    default: 192.168.0.0/24
+
+  external_network:
+    type: string
+    description: The public network to connect to
+    constraints:
+      - custom_constraint: neutron.network
+
+  ### Volume Parameters ###
+  volume_size:
+    type: number
+    description: The size of the volume in GB
+    default: 10
+    constraints:
+          - range: { min: 1 }
+
+resources:
+
+  ### Network Connectivity ###
+  network_stack:
+    type: HeatLib::Network::FullStack
+    properties:
+      name: { get_param: name }
+      cidr: { get_param: network_cidr }
+      external_network: { get_param: external_network }
+
+  floating_ip:
+    type: HeatLib::Network::FloatingIP
+    properties:
+      external_network: { get_param: external_network }
+      port: { get_attr: [instance, instance_addresses, { get_attr: [ network_stack, network_uuid ] }, 0, port ] }
+
+
+  ### Access and Security ###
+  instance_access:
+    type: HeatLib::SecurityGroups::Generic
+    properties:
+      name: { get_param: name }
+      ports: { get_param: ports }
+      protocols: { get_param: protocols }
+
+  instance_access_icmp:
+    type: HeatLib::SecurityGroups::ICMP
+    properties:
+      name: { get_param: name }
+
+
+  ### Instance ###
+  instance:
+    type: HeatLib::Instance::Basic
+    depends_on: [instance_access, instance_access_icmp]
+    properties:
+      name: { get_param: name }
+      key: { get_param: key }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      subnets:
+        - { get_attr: [ network_stack, subnet_uuid ] }
+      security_groups:
+        - { get_attr: [ instance_access, security_group_uuid ] }
+        - { get_attr: [ instance_access_icmp, security_group_uuid ] }
+      http_proxy: { get_param: http_proxy }
+      https_proxy: { get_param: https_proxy }
+
+
+  ### Instance Volume ###
+  data_volume:
+    type: HeatLib::Volume::Basic
+    properties:
+      name: { get_param: name }
+      size: { get_param: volume_size }
+      instance: { get_attr: [ instance, instance_uuid ] }
+
+
+  ### Instance Software Configurations ###
+  # Volume Mount
+  data_volume_mount:
+    type: HeatLib::SoftwareConfig::VolumeMount
+    properties:
+      volume_id: { get_attr: [ data_volume, volume_uuid ] }
+      mount_path: "/data/home"
+      instance: { get_attr: [ instance, instance_uuid ] }
+
+  # Disable Selinux
+  disable_selinux:
+    type: HeatLib::SoftwareConfig::DisableSelinux
+    properties:
+      instance: { get_attr: [ instance, instance_uuid ] }
+
+  # Httpd Package Install
+  package_httpd:
+    type: HeatLib::SoftwareConfig::HTTP
+    properties:
+      instance: { get_attr: [ instance, instance_uuid ] }
+      ssl_config_type: "provided"
+      ssl_cert: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVEakNDQXZhZ0F3SUJBZ0lDRFFNd0RRWUpLb1pJaHZjTkFRRUxCUUF3Z2JzeEN6QUpCZ05WQkFZVEFpMHQKTVJJd0VBWURWUVFJREFsVGIyMWxVM1JoZEdVeEVUQVBCZ05WQkFjTUNGTnZiV1ZEYVhSNU1Sa3dGd1lEVlFRSwpEQkJUYjIxbFQzSm5ZVzVwZW1GMGFXOXVNUjh3SFFZRFZRUUxEQlpUYjIxbFQzSm5ZVzVwZW1GMGFXOXVZV3hWCmJtbDBNUjR3SEFZRFZRUUREQlZzYjJOaGJHaHZjM1F1Ykc5allXeGtiMjFoYVc0eEtUQW5CZ2txaGtpRzl3MEIKQ1FFV0duSnZiM1JBYkc5allXeG9iM04wTG14dlkyRnNaRzl0WVdsdU1CNFhEVEUzTURFeE1qRTBNek15T1ZvWApEVEU0TURFeE1qRTBNek15T1Zvd2dic3hDekFKQmdOVkJBWVRBaTB0TVJJd0VBWURWUVFJREFsVGIyMWxVM1JoCmRHVXhFVEFQQmdOVkJBY01DRk52YldWRGFYUjVNUmt3RndZRFZRUUtEQkJUYjIxbFQzSm5ZVzVwZW1GMGFXOXUKTVI4d0hRWURWUVFMREJaVGIyMWxUM0puWVc1cGVtRjBhVzl1WVd4VmJtbDBNUjR3SEFZRFZRUUREQlZzYjJOaApiR2h2YzNRdWJHOWpZV3hrYjIxaGFXNHhLVEFuQmdrcWhraUc5dzBCQ1FFV0duSnZiM1JBYkc5allXeG9iM04wCkxteHZZMkZzWkc5dFlXbHVNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQTJmYmIKbC9sRnhjVkluL2syY29HaUJ1Q2NkbDRnSEZCZDdPL0NmZU9DVStzVGlxcUdnU0t4cWYyejFURDBJSEprLzRPagppa1lJS3pmeDBMeEJUaEJQV2Z4Nm5KaHVjbWQrZEtVL1h1VGdLTGtLK0VZT3ptTlp5SDJjZlVtZGJUZG5ZbCtuCk13V3pkM25SZktSNkc0VzcrMlNmTmh5MTEvU3hVNm1Od0cxWmF1ZVI1L3JwYkMzSEdOK0xXR3FWYnhnMFFQd0QKM3BzVXlCVThnQUxWMzg3ZVhzTzJleXpOb0pjeXhTNkJLRWE2b0Zkc3QrLzhzc2VDdnI5L2Exakl1a0hXMTE2SwpzOUlSVmh6UnJQQjRUMHY0KzBSblk4M0JrM3MwY0dqQlFYd1NJQUxkT2FWNkgxZ0JOSC9ybUlxMEhaVWhpbVJiCi9hRzZYaUVUUTE4NE5Mdi9Fd0lEQVFBQm94b3dHREFKQmdOVkhSTUVBakFBTUFzR0ExVWREd1FFQXdJRjREQU4KQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBa2xNZng1ak5TRE9nWnQ5bFlkWkxBTWFsN2lvc0l0Y296OVNidmp5NgprNXhvQmNwZkhXSXNqb2pzSGY0d1oyUFhOazBHL0ZzYjRuRkdnMkEvN2MybUVhWkpRT3BHNUwraGVrMzJ1bzhWCm5nMWlrcHowK0ZDUlFpWUpqekxjdjg3Q1VHeDhlangwRWo2MCtnSCtsRzMxMWg4ck1SS014cSttK3ZsOHZ0a0EKajFicnJLY2RqNzNxZUlNVnJJNWx2U2lqVmtWMDhOdVVHY3pVTTBhMmVaWkovdUZFU0ljZDhnVXZQQmV0YWgxRgp0K2dPWTZBWDFhV3dTNDB3cjNTWUlmYzJ3L0VTSjExa3J6ODZZVnA0YkF0QUhFcVc0ZVJPWUttZnp2eXYyUC9QCkozWjJRQ3dYY2F1ZGVkM0RGeEpNd3J0K0w4bnJYczFSMXZzYklxK3hITzFFWXc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
+      ssl_key: "LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBMmZiYmwvbEZ4Y1ZJbi9rMmNvR2lCdUNjZGw0Z0hGQmQ3Ty9DZmVPQ1Urc1RpcXFHCmdTS3hxZjJ6MVREMElISmsvNE9qaWtZSUt6ZngwTHhCVGhCUFdmeDZuSmh1Y21kK2RLVS9YdVRnS0xrSytFWU8Kem1OWnlIMmNmVW1kYlRkbllsK25Nd1d6ZDNuUmZLUjZHNFc3KzJTZk5oeTExL1N4VTZtTndHMVphdWVSNS9ycApiQzNIR04rTFdHcVZieGcwUVB3RDNwc1V5QlU4Z0FMVjM4N2VYc08yZXl6Tm9KY3l4UzZCS0VhNm9GZHN0Ky84CnNzZUN2cjkvYTFqSXVrSFcxMTZLczlJUlZoelJyUEI0VDB2NCswUm5ZODNCazNzMGNHakJRWHdTSUFMZE9hVjYKSDFnQk5IL3JtSXEwSFpVaGltUmIvYUc2WGlFVFExODROTHYvRXdJREFRQUJBb0lCQUZYZHRDQ29xTjRDbkZ1NQpOOFBnWWM1SHlodXZkUUx5Zmk0TFBobU4rUmZLTWdhY3F5UlFZS0ZST3ZrdnNkemVjLzlkQXA1RWZJOWFHTDljCmluV1FZMUpWN28rbVZVeG9qUjZ5d3NaRmNERmF4SUdPUitMeXJMb1pFZjhoY3cxRm1FcmUxK1YzeDMyMzFkaysKaW9ReEtSOGVRc0owaVFhc2RQYzZnb2RlREszYUZlZWN0M1V1eDNNa3RpMWNCbm9ZcXd5MnYrdXR0aHE1eVlCUQpIWDhicWFUZXE1VXkxM1c0YzF5OEwvRWY5YXRlUGFZdlpVOHF2dEwyaFg0T3N4Y2xFaWR0dmlBNXBvc2NJaDZuCnZXWDM4VUZ4eEVVemZ2UkdSSWZCUHUzZTNxNkNhdHVMUVpmNUFpZkNyYUdmZE04b3BwM0F1bitSQWhyUFkwTEIKZ1pYcEFBRUNnWUVBK216L2U5T0xiWXg0OXF1dTdEVEMzRGc2anJsdnJaMzVaZDdvc2hTNHFRZENIVjRvZVF6cwpQWTZHZ0s2bGFLelBkSmJWUTBZSDRDOG40b2FIZHVLekhuVDJRem55aEYwKzdaUG9xdFVZcWdTalVjL2lWU08xClovbDVSWWxaM0hZL1V1NUo3SjMzcnVIU1A2TlNNMHhDbndRN3J4bFdJOVpwVHZRVWF5YVFnQUVDZ1lFQTN0RGkKYVJOaThZUGZLU1pRMEFRdTNESG9Rc1VYWlVHaEtTcGJiUDlvMjJjQzFVTXdDQm81RHBYbzNOMkFMS2ZXTEZJVApzSFNlK1NXQWtJaUZqYXlQNEozbTJJcURodEVqYUNBbXVBWGdxUGFQUWttVE5wUGFha0s0NjhzeGZuTVVHYnU0Ck8yNlhHQWdhNkZjM0lXeUJsMWU5bjl3Y0lxaWZhZHZKd2FpQ2Z4TUNnWUFGZU13OFVHc0RnY1pDM1kxODY4bzIKTmFSUjZndGVwODBEUk5PZzBJTVlibWdyYkJ0R1Nkbi9ubFdpQ2k3akVxT1YwSlhvV21kaHBxWWdkUUFRd1BOWQovd1ZDZ3NtaHlzZk5PU1lrVlhPc2cxMXVORFNsMTVubkk3UmFxSjJtQzQ5bXFINUZCVTZjSzZNRWNQVWkyYys2CjJjVFVGcUdqTnRRbVBYOFV1RXNBQVFLQmdDdlJPRFVoc3R0NzYyN1VNaUEyTW1EckQ1blIySC81SUJCUVhCcGIKUCt1bG5sRUNIWGY2Y0M0R0hQMFNNaHFXQnZCQVU4N25vRHV1dkZHd0IxT05FOTVBTHgxMlg5Y3JXYU1vYjNUUQo4eFZISjNVSnN3R1FvZXN6bzluNjQ0alNhS21HMlB3WEMyK1dhSFE0Y29jSUo1UHpsVDdTc2xXK2cxcjE5ZjgzCmZESXhBb0dBQ1Z3NzhoaVU4bDdNMWZKYnFEeWxTdTl4eDg3UytXM0JsRXRTVzJML0M0TUVVWXJDSDlKNHZrd2kKVE9CWXljMnJHU1NWak5Vb21Yb1JHR01lTXRWcU1aVUNGT0FIZEdWV0IyNmtFdk5semFXZkFVbW52YjZ6ZFdzSwpOK0syaWliZkZ2d0dtWExlRXh6cmJMZXo1VExRKzNVd2JJaWxzcExienIzbnBsWGZaMVE9Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg=="
+      ssl_ca: "none"
+      http_proxy: { get_param: http_proxy }
+      https_proxy: { get_param: https_proxy }
+
+  reverse_proxy_app1:
+    type: HeatLib::SoftwareConfig::HTTP::ReverseProxy
+    depends_on: package_httpd
+    properties:
+      instance: { get_attr: [ instance, instance_uuid ] }
+      proxy_pass: "/google http://google.com/"
+
+  reverse_proxy_app2:
+    type: HeatLib::SoftwareConfig::HTTP::ReverseProxy
+    depends_on: package_httpd
+    properties:
+      instance: { get_attr: [ instance, instance_uuid ] }
+      proxy_pass: "/bing http://bing.com"
+
+outputs:
+
+  floating_ip:
+    value: { get_attr: [ floating_ip, floating_ip_address ] }
+
+  data_volume_status:
+    value: { get_attr: [ data_volume_mount, status ] }
+
+  data_volume_stderr:
+    value: { get_attr: [ data_volume_mount, stderr ] }
+
+  disable_selinux_status:
+    value: { get_attr: [ disable_selinux, status ] }
+
+  disable_selinux_stderr:
+    value: { get_attr: [ disable_selinux, stderr ] }
+
+  package_httpd_install_status:
+    value: { get_attr: [ package_httpd, install_status ] }
+
+  package_httpd_install_stderr:
+    value: { get_attr: [ package_httpd, install_stderr ] }
+
+  package_httpd_config_status:
+    value: { get_attr: [ package_httpd, config_status ] }
+
+  package_httpd_config_stderr:
+    value: { get_attr: [ package_httpd, config_stderr ] }
+
+  package_httpd_start_status:
+    value: { get_attr: [ package_httpd, start_status ] }
+
+  package_httpd_start_stderr:
+    value: { get_attr: [ package_httpd, start_stderr ] }
+
+  reverse_proxy_app1_status:
+    value: { get_attr: [ reverse_proxy_app1, config_status ] }
+
+  reverse_proxy_app1_stderr:
+    value: { get_attr: [ reverse_proxy_app1, config_stderr ] }
+
+  reverse_proxy_app2_status:
+    value: { get_attr: [ reverse_proxy_app2, config_status ] }
+
+  reverse_proxy_app2_stderr:
+    value: { get_attr: [ reverse_proxy_app2, config_stderr ] }

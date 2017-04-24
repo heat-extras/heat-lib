@@ -1,0 +1,112 @@
+heat_template_version: 2015-10-15
+
+description: >
+  This template creates a numnber of instances on the same network without
+  loadbalancing or autoscaling
+
+parameter_groups:
+
+parameters:
+
+  count:
+    type: number
+    description: The number of instances in the cluster to deploy
+    default: 3
+
+  name:
+    type: string
+    description: The name of the cluster
+    constraints:
+      - allowed_pattern: "[a-z][a-z0-9-]{1,}"
+
+  key:
+    type: string
+    description: SSH key to inject into the instance
+    constraints:
+      - custom_constraint: nova.keypair
+
+  image:
+    type: string
+    description: Image to deploy the instance from
+    constraints:
+      - custom_constraint: glance.image
+
+  flavor:
+    type: string
+    description: Flavor to use for the instance
+    constraints:
+      - custom_constraint: nova.flavor
+
+  subnets:
+    type: comma_delimited_list
+    description: List of subnets to connect the instance to
+
+  security_groups:
+    type: comma_delimited_list
+    description: List of security groups to attach to the instance
+
+  http_proxy:
+    description: HTTP Proxy for agents installation
+    type: string
+    default: "none"
+
+  https_proxy:
+    description: HTTPS Proxy for agents installation
+    type: string
+    default: "none"
+
+  volume_count:
+    description: Number of volume to create for the instances
+    type: number
+
+  volume_size:
+    description: Size of each volume in GB
+    type: number
+
+resources:
+
+  policy_group:
+    type: OS::Nova::ServerGroup
+    properties:
+      name:
+        list_join: ['-', [{ get_param: name }, 'server-group']]
+      policies: [anti-affinity]
+
+  cluster_instances:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: count }
+      resource_def:
+        type: HeatLib::Instance::WithVolumes
+        properties:
+          name:
+            list_join: ['-', [{ get_param: name }, '%index%']]
+          image: { get_param: image }
+          flavor: { get_param: flavor }
+          volume_size: { get_param: volume_size }
+          volume_count: { get_param: volume_count }
+          key: { get_param: key }
+          subnets: { get_param: subnets }
+          security_groups: { get_param: security_groups }
+          http_proxy: { get_param: http_proxy }
+          https_proxy: { get_param: https_proxy }
+          scheduler_hints:
+           group: { get_resource: policy_group }
+
+outputs:
+
+  cluster_attributes_name:
+    description: Names of the resources in the cluster
+    value: { get_attr: [ cluster_instances, attributes, instance_name ] }
+
+  cluster_attributes_uuid:
+    description: UUIDs of the resources in the cluster
+    value: { get_attr: [ cluster_instances, attributes, instance_uuid ] }
+
+  refs:
+    description: References of the resources in the cluster
+    value: { get_attr: [ cluster_instances, refs ] }
+
+  show:
+    description: Full details of the cluster
+    value: { get_attr: [ cluster_instances, show ] }

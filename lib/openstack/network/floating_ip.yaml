@@ -1,0 +1,61 @@
+heat_template_version: 2015-10-15
+
+parameters:
+
+  external_network:
+    label: Network ID for public network
+    type: string
+    constraints:
+      - custom_constraint: neutron.network
+
+  port:
+    label: Server port
+    description: The server port that receives the floating IP address.
+    type: string
+
+resources:
+
+  floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: external_network }
+
+  floating_ip_assoc:
+    type: OS::Neutron::FloatingIPAssociation
+    properties:
+      floatingip_id: { get_resource: floating_ip }
+      port_id: { get_param: port}
+
+outputs:
+
+  floating_ip_fixed_ip_address:
+    description: IP address of the associated port, if specified.
+    value: { get_attr: [floating_ip, fixed_ip_address] }
+
+  floating_ip_address:
+    description: The allocated address of this IP.
+    value: { get_attr: [floating_ip, floating_ip_address] }
+
+  floating_ip_floating_network_id:
+    description: ID of the network in which this IP is allocated.
+    value: { get_attr: [floating_ip, floating_network_id] }
+
+  floating_ip_port_id:
+    description: ID of the port associated with this IP.
+    value: { get_attr: [floating_ip, port_id] }
+
+  floating_ip_router_id:
+    description: ID of the router used as gateway, set when associated with a port.
+    value: { get_attr: [floating_ip, router_id] }
+
+  floating_ip_show:
+    description: Detailed information about resource.
+    value: { get_attr: [floating_ip, show] }
+
+  floating_ip_tenant_id:
+    description: The tenant owning this floating IP.
+    value: { get_attr: [floating_ip, tenant_id] }
+
+  floating_ip_assoc_show:
+    description: Detailed information about resource.
+    value: { get_attr: [floating_ip_assoc, show] }

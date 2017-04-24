@@ -1,0 +1,191 @@
+heat_template_version: 2015-04-30
+description: Load Balancer LBaaS V1 test
+
+parameter_groups:
+
+parameters:
+
+  key:
+    type: string
+    description: SSH key to inject into the instance
+    constraints:
+      - custom_constraint: nova.keypair
+
+  image:
+    type: string
+    description: Image to deploy the instance from
+    constraints:
+      - custom_constraint: glance.image
+
+  flavor:
+    type: string
+    description: Flavor to use for the instance
+    constraints:
+      - custom_constraint: nova.flavor
+
+  external_network:
+    type: string
+    description: Network to attach the load balancer to
+    constraints:
+      - custom_constraint: neutron.network
+
+  dns_nameservers:
+    type: comma_delimited_list
+    description: List of DNS servers
+    default:
+      - 8.8.8.8
+      - 8.8.8.4
+
+resources:
+
+  network1:
+    type: OS::Neutron::Net
+    properties:
+      name: testnetwork
+
+  network2:
+    type: OS::Neutron::Net
+    properties:
+      name: testnetwork2
+
+  subnet1:
+    type: OS::Neutron::Subnet
+    properties:
+      name: testsubnet1
+      network_id: { get_resource: network1 }
+      cidr: 192.168.0.0/24
+      dns_nameservers: { get_param: dns_nameservers }
+
+  subnet2:
+    type: OS::Neutron::Subnet
+    properties:
+      name: testsubnet2
+      network_id: { get_resource: network2 }
+      cidr: 192.168.10.0/24
+      dns_nameservers: { get_param: dns_nameservers }
+
+  loadbalancer1:
+    type: HeatLib::LoadBalancer::V1
+    properties:
+      description: Test LoadBalancer 1
+      name: testlb1
+      subnet: { get_resource: subnet1 }
+      port: 22
+
+  loadbalancer2:
+    type: HeatLib::LoadBalancer::V1
+    properties:
+      description: Test LoadBalancer 2
+      name: testlb2
+      subnet: { get_resource: subnet1 }
+      port: 22
+
+  loadbalancer3:
+    type: HeatLib::LoadBalancer::V1
+    properties:
+      description: Test LoadBalancer 3
+      name: testlb3
+      subnet: { get_resource: subnet2 }
+      port: 22
+
+outputs:
+
+  lb1_monitor_uuid:
+    description: UUID of the monitor
+    value: { get_attr: [ loadbalancer1, monitor_uuid ] }
+
+  lb1_monitor_admin_state_up:
+    description: The administrative state of this health monitor.
+    value: { get_attr: [ loadbalancer1, monitor_admin_state_up ] }
+
+  lb1_monitor_delay:
+    description: The minimum time in seconds between regular connections of the member.
+    value: { get_attr: [ loadbalancer1, monitor_delay ] }
+
+  lb1_monitor_expected_codes:
+    description: The list of HTTP status codes expected in response from the member to declare it healthy.
+    value: { get_attr: [ loadbalancer1, monitor_expected_codes ] }
+
+  lb1_monitor_http_method:
+    description: The HTTP method used for requests by the monitor of type HTTP.
+    value: { get_attr: [ loadbalancer1, monitor_http_method ] }
+
+  lb1_monitor_max_retries:
+    description: Number of permissible connection failures before changing the member status to INACTIVE.
+    value: { get_attr: [ loadbalancer1, monitor_max_retries ] }
+
+  lb1_monitor_show:
+    description: Detailed information about resource.
+    value: { get_attr: [ loadbalancer1, monitor_show ] }
+
+  lb1_monitor_tenant_id:
+    description: Tenant owning the health monitor.
+    value: { get_attr: [ loadbalancer1, monitor_tenant_id ] }
+
+  lb1_monitor_timeout:
+    description: Maximum number of seconds for a monitor to wait for a connection to be established before it times out.
+    value: { get_attr: [ loadbalancer1, monitor_timeout ] }
+
+  lb1_monitor_type:
+    description: One of predefined health monitor types.
+    value: { get_attr: [ loadbalancer1, monitor_type ] }
+
+  lb1_monitor_url_path:
+    description: The HTTP path used in the HTTP request used by the monitor to test a member health.
+    value: { get_attr: [ loadbalancer1, monitor_url_path ] }
+
+  lb1_pool_uuid:
+    description: UUID of the pool
+    value: { get_attr: [ loadbalancer1, pool_uuid ] }
+
+  lb1_pool_admin_state_up:
+    description: The administrative state of this pool.
+    value: { get_attr: [ loadbalancer1, pool_admin_state_up ] }
+
+  lb1_pool_description:
+    description: Description of the pool.
+    value: { get_attr: [ loadbalancer1, pool_description ] }
+
+  lb1_pool_lb_method:
+    description: The algorithm used to distribute load between the members of the pool.
+    value: { get_attr: [ loadbalancer1, pool_lb_method ] }
+
+  lb1_pool_name:
+    description: Name of the pool.
+    value: { get_attr: [ loadbalancer1, pool_name ] }
+
+  lb1_pool_protocol:
+    description: Protocol to balance.
+    value: { get_attr: [ loadbalancer1, pool_protocol ] }
+
+  lb1_pool_provider:
+    description: Provider implementing this load balancer instance.
+    value: { get_attr: [ loadbalancer1, pool_provider ] }
+
+  lb1_pool_show:
+    description: Detailed information about resource.
+    value: { get_attr: [ loadbalancer1, pool_show ] }
+
+  lb1_pool_subnet_id:
+    description: The subnet for the port on which the members of the pool will be connected.
+    value: { get_attr: [ loadbalancer1, pool_subnet_id ] }
+
+  lb1_pool_tenant_id:
+    description: Tenant owning the pool.
+    value: { get_attr: [ loadbalancer1, pool_tenant_id ] }
+
+  lb1_pool_vip:
+    description: Virtual IP associated with the pool.
+    value: { get_attr: [ loadbalancer1, pool_vip ] }
+
+  lb1_pool_port_id:
+    description: Network Port ID of the Virtual IP associated with the pool.
+    value: { get_attr: [ loadbalancer1, pool_port_id ] }
+
+  lb1_loadbalancer_uuid:
+    description: UUID of the load Balancer
+    value: { get_attr: [ loadbalancer1, loadbalancer_uuid ] }
+
+  lb1_loadbalancer_show:
+    description: Detailed information about the loadbalancer.
+    value: { get_attr: [ loadbalancer1, loadbalancer_show ] }

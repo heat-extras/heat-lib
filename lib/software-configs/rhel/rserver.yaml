@@ -1,0 +1,112 @@
+heat_template_version: 2015-10-15
+
+description: >
+  Template for rserver software config deployment
+
+parameters:
+
+  http_proxy:
+    type: string
+    description: The http proxy to be used during the package installation
+    default: "none"
+
+  https_proxy:
+    type: string
+    description: The https proxy to be used during the package installation
+    default: "none"
+
+  rpm_link:
+    type: string
+    description: The link for the RPM that will be used to install the rserver version
+    default: "https://download2.rstudio.org/rstudio-server-rhel-1.0.136-x86_64.rpm"
+
+  port:
+    type: string
+    description: The port that will run the Rserver
+    default: 8787
+
+  instance:
+    type: string
+    description: The instance where this Software Configuration should be applied
+    constraints:
+      - custom_constraint: nova.server
+
+resources:
+
+  install:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: http_proxy
+        - name: https_proxy
+        - name: rpm_link
+      outputs:
+        - name: status
+      config: { get_file: scripts/rserver/install.sh }
+
+  install_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config: { get_resource: install }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+      input_values:
+        http_proxy: { get_param: http_proxy }
+        https_proxy: { get_param: https_proxy }
+        rpm_link: { get_param: rpm_link }
+
+  config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: port
+      outputs:
+        - name: status
+      config: { get_file: scripts/rserver/configure.sh }
+
+  config_deployment:
+    type: OS::Heat::SoftwareDeployment
+    depends_on: install_deployment
+    properties:
+      config: { get_resource: config }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+      input_values:
+        port: { get_param: port }
+
+  start:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      outputs:
+        - name: status
+      config: { get_file: scripts/rserver/start.sh }
+
+  start_deployment:
+    type: OS::Heat::SoftwareDeployment
+    depends_on: config_deployment
+    properties:
+      config: { get_resource: start }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+
+outputs:
+  install_status:
+    value: { get_attr: [install_deployment, status] }
+
+  install_stderr:
+    value: { get_attr: [install_deployment, deploy_stderr] }
+
+  config_status:
+    value: { get_attr: [config_deployment, status] }
+
+  config_stderr:
+    value: { get_attr: [config_deployment, deploy_stderr] }
+
+  start_status:
+    value: { get_attr: [start_deployment, status] }
+
+  start_stderr:
+    value: { get_attr: [start_deployment, deploy_stderr] }

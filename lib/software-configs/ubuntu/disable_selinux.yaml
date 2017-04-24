@@ -1,0 +1,36 @@
+heat_template_version: 2015-10-15
+
+description: >
+  Software Configuration for disabling selinux
+
+parameters:
+
+  instance:
+    type: string
+    description: The instance where this Software Configuration should be applied
+    constraints:
+      - custom_constraint: nova.server
+
+resources:
+
+  config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      outputs:
+        - name: status
+      config: { get_file: scripts/disable_selinux/configure.sh }
+
+  config_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config: { get_resource: config }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+
+outputs:
+  status:
+    value: { get_attr: [config_deployment, status] }
+
+  stderr:
+    value: { get_attr: [config_deployment, deploy_stderr] }

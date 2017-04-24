@@ -1,0 +1,123 @@
+heat_template_version: 2015-10-15
+
+description: >
+  Base template for software config deployment
+
+parameters:
+
+  http_proxy:
+    type: string
+    description: The http proxy to be used during the package installation
+    default: "none"
+
+  https_proxy:
+    type: string
+    description: The https proxy to be used during the package installation
+    default: "none"
+
+  postgres_password:
+    type: string
+    description: Password for root user in mysql
+    default: "autogenerate"
+
+  data_directory:
+    type: string
+    description: Directory that will hold mySQL db
+    default: "/data/pgsql"
+
+  instance:
+    type: string
+    description: The instance where this Software Configuration should be applied
+    constraints:
+      - custom_constraint: nova.server
+
+resources:
+
+  install:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: http_proxy
+        - name: https_proxy
+      outputs:
+        - name: status
+      config: { get_file: scripts/postgres/install.sh }
+
+  install_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config: { get_resource: install }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+      actions:
+        - CREATE
+      input_values:
+        http_proxy: { get_param: http_proxy }
+        https_proxy: { get_param: https_proxy }
+
+  config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: postgres_password
+        - name: data_directory
+      outputs:
+        - name: postgres_password
+        - name: status
+      config: { get_file: scripts/postgres/configure.sh }
+
+  config_deployment:
+    type: OS::Heat::SoftwareDeployment
+    depends_on: install_deployment
+    properties:
+      config: { get_resource: config }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+      input_values:
+        postgres_password: { get_param: postgres_password }
+        data_directory: { get_param: data_directory }
+      actions:
+        - CREATE
+
+  start:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      outputs:
+        - name: status
+      config: { get_file: scripts/postgres/start.sh }
+
+  start_deployment:
+    type: OS::Heat::SoftwareDeployment
+    depends_on: config_deployment
+    properties:
+      config: { get_resource: start }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+      actions:
+        - CREATE
+
+
+outputs:
+  install_status:
+    value: { get_attr: [install_deployment, status] }
+
+  install_stderr:
+    value: { get_attr: [install_deployment, deploy_stderr] }
+
+  config_status:
+    value: { get_attr: [config_deployment, status] }
+
+  config_stderr:
+    value: { get_attr: [config_deployment, deploy_stderr] }
+
+  config_postgres_password:
+    value: { get_attr: [config_deployment, postgres_password] }
+
+  start_status:
+    value: { get_attr: [start_deployment, status] }
+
+  start_stderr:
+    value: { get_attr: [start_deployment, deploy_stderr] }

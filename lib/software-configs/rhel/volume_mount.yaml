@@ -1,0 +1,63 @@
+heat_template_version: 2015-10-15
+
+description: >
+  Software Configuration for mounting an attached volume to a particular path within the instance
+
+parameters:
+
+  volume_id:
+    type: string
+    description: The volume ID mounted in the instance
+    constraints:
+      - custom_constraint: cinder.volume
+
+  mount_path:
+    type: string
+    description: The path where the volume should be mounted
+
+  make_fs:
+    type: string
+    description: Flag that will ensure the creation of a ext4 FS on the volume
+    default: 'false'
+    constraints:
+      - allowed_values: ['true', 'false']
+
+  instance:
+    type: string
+    description: The instance where this Software Configuration should be applied
+    constraints:
+      - custom_constraint: nova.server
+
+resources:
+
+  config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: voldata_id
+        - name: mount_path
+        - name: make_fs
+      outputs:
+        - name: status
+      config: { get_file: scripts/volume_mount/configure.sh }
+
+  config_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config: { get_resource: config }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+      input_values:
+        voldata_id: { get_param: volume_id }
+        mount_path: { get_param: mount_path }
+        make_fs: { get_param: make_fs }
+      actions:
+        - CREATE
+
+outputs:
+  status:
+    value: { get_attr: [config_deployment, status] }
+
+  stderr:
+    value: { get_attr: [config_deployment, deploy_stderr] }

@@ -1,0 +1,221 @@
+heat_template_version: 2015-10-15
+description: This creates a TCP based load balancer for LBaaS v1
+
+parameter_groups:
+
+parameters:
+
+  name:
+    description: Name of the load balancer
+    type: string
+    constraints:
+      - allowed_pattern: "[a-z][a-z0-9-]{1,}"
+
+  description:
+    description: Description
+    type: string
+
+  admin_state_up:
+    description: The administrative state of the health monitor.
+    type: boolean
+    default: true
+
+  delay:
+    description: >
+      The minimum time in seconds between regular connections
+      of the member.
+    type: number
+    default: 5
+
+  expected_codes:
+    description: >
+      The list of HTTP status codes expected in response from the member to
+      declare it healthy.
+    type: string
+    default: 200
+
+  http_method:
+    description: The HTTP method used for requests by the monitor of type HTTP.
+    type: string
+    default: ""
+
+  max_retries:
+    description: >
+      Number of permissible connection failures before changing the member
+      status to INACTIVE.
+    type: number
+    default: 3
+
+  timeout:
+    description: >
+      Maximum number of seconds for a monitor to wait for a connection
+      to be established before it times out.
+    type: number
+    default: 2
+
+  type:
+    constraints:
+      - allowed_values: [PING, TCP, HTTP, HTTPS]
+    description: One of predefined health monitor types.
+    type: string
+    default: PING
+
+  url_path:
+    description: >
+      The HTTP path used in the HTTP request used by the monitor to test
+      a member health.
+    type: string
+    default: ""
+
+  subnet:
+    description: Subnet to allocate the virtual IP in
+    type: string
+    constraints:
+      - custom_constraint: neutron.subnet
+
+  port:
+    type: number
+    description: Port the load balancer should listen on
+    constraints:
+      - range: { min: 1, max: 65535 }
+
+resources:
+
+  tcp_lb_monitor:
+    type: OS::Neutron::HealthMonitor
+    properties:
+      admin_state_up: { get_param: admin_state_up }
+      delay: { get_param: delay }
+      expected_codes: { get_param: expected_codes }
+      http_method: { get_param: http_method }
+      max_retries: { get_param: max_retries }
+      timeout: { get_param: timeout }
+      type: { get_param: type }
+      url_path: { get_param: url_path }
+
+  tcp_lb_pool:
+    type: OS::Neutron::Pool
+    properties:
+      description: { get_param: description }
+      name:
+        list_join: ['-', [{ get_param: name }, 'pool']]
+      protocol: TCP
+      subnet_id: { get_param: subnet }
+      lb_method: ROUND_ROBIN
+      monitors:
+        - { get_resource: tcp_lb_monitor }
+      vip:
+        name:
+          list_join: ['-', [{ get_param: name }, 'vip']]
+        protocol_port: { get_param: port }
+        session_persistence:
+          type: SOURCE_IP
+        subnet: { get_param: subnet }
+
+  tcp_loadbalancer:
+    type: OS::Neutron::LoadBalancer
+    properties:
+      pool_id: { get_resource: tcp_lb_pool }
+      protocol_port: { get_param: port }
+
+outputs:
+
+  monitor_uuid:
+    description: UUID of the monitor
+    value: { get_resource: tcp_lb_monitor }
+
+  monitor_admin_state_up:
+    description: The administrative state of this health monitor.
+    value: { get_attr: [ tcp_lb_monitor, admin_state_up ] }
+
+  monitor_delay:
+    description: The minimum time in seconds between regular connections of the member.
+    value: { get_attr: [ tcp_lb_monitor, delay ] }
+
+  monitor_expected_codes:
+    description: The list of HTTP status codes expected in response from the member to declare it healthy.
+    value: { get_attr: [ tcp_lb_monitor, expected_codes ] }
+
+  monitor_http_method:
+    description: The HTTP method used for requests by the monitor of type HTTP.
+    value: { get_attr: [ tcp_lb_monitor, http_method ] }
+
+  monitor_max_retries:
+    description: Number of permissible connection failures before changing the member status to INACTIVE.
+    value: { get_attr: [ tcp_lb_monitor, max_retries ] }
+
+  monitor_show:
+    description: Detailed information about resource.
+    value: { get_attr: [ tcp_lb_monitor, show ] }
+
+  monitor_tenant_id:
+    description: Tenant owning the health monitor.
+    value: { get_attr: [ tcp_lb_monitor, tenant_id ] }
+
+  monitor_timeout:
+    description: Maximum number of seconds for a monitor to wait for a connection to be established before it times out.
+    value: { get_attr: [ tcp_lb_monitor, timeout ] }
+
+  monitor_type:
+    description: One of predefined health monitor types.
+    value: { get_attr: [ tcp_lb_monitor, type ] }
+
+  monitor_url_path:
+    description: The HTTP path used in the HTTP request used by the monitor to test a member health.
+    value: { get_attr: [ tcp_lb_monitor, url_path ] }
+
+  pool_uuid:
+    description: UUID of the pool
+    value: { get_resource: tcp_lb_pool }
+
+  pool_admin_state_up:
+    description: The administrative state of this pool.
+    value: { get_attr: [ tcp_lb_pool, admin_state_up ] }
+
+  pool_description:
+    description: Description of the pool.
+    value: { get_attr: [ tcp_lb_pool, description ] }
+
+  pool_lb_method:
+    description: The algorithm used to distribute load between the members of the pool.
+    value: { get_attr: [ tcp_lb_pool, lb_method ] }
+
+  pool_name:
+    description: Name of the pool.
+    value: { get_attr: [ tcp_lb_pool, name ] }
+
+  pool_protocol:
+    description: Protocol to balance.
+    value: { get_attr: [ tcp_lb_pool, protocol ] }
+
+  pool_provider:
+    description: Provider implementing this load balancer instance.
+    value: { get_attr: [ tcp_lb_pool, provider ] }
+
+  pool_show:
+    description: Detailed information about resource.
+    value: { get_attr: [ tcp_lb_pool, show ] }
+
+  pool_subnet_id:
+    description: The subnet for the port on which the members of the pool will be connected.
+    value: { get_attr: [ tcp_lb_pool, subnet_id ] }
+
+  pool_tenant_id:
+    description: Tenant owning the pool.
+    value: { get_attr: [ tcp_lb_pool, tenant_id ] }
+
+  pool_vip:
+    description: Virtual IP associated with the pool.
+    value: { get_attr: [ tcp_lb_pool, vip ] }
+
+  pool_port_id:
+    description: Network Port ID of the Virtual IP associated with the pool.
+    value: { get_attr: [ tcp_lb_pool, vip, port_id ] }
+
+  loadbalancer_uuid:
+    description: UUID of the load Balancer
+    value: { get_resource: tcp_loadbalancer }
+
+  loadbalancer_show:
+    description: Detailed information about the loadbalancer.
+    value: { get_attr: [ tcp_loadbalancer, show ] }

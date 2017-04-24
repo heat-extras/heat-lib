@@ -1,0 +1,51 @@
+heat_template_version: 2015-10-15
+
+description: >
+  Template for configuring a reverse proxy
+
+parameters:
+
+  proxy_pass:
+    type: string
+    description: The source to desitination map. Format should be "<LocalPath> <DestinationURL">
+
+  proxy_pass_reverse:
+    type: string
+    description: How to handle redirects. If left as default, its value will be the same as the proxy_pass param
+    default: "none"
+
+  instance:
+    type: string
+    description: The instance where this Software Configuration should be applied
+    constraints:
+      - custom_constraint: nova.server
+
+resources:
+
+  config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: proxy_pass
+        - name: proxy_pass_reverse
+      outputs:
+        - name: status
+      config: { get_file: scripts/httpd_reverse_proxy/configure.sh }
+
+  config_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config: { get_resource: config }
+      server: { get_param: instance }
+      signal_transport: HEAT_SIGNAL
+      input_values:
+        proxy_pass: { get_param: proxy_pass }
+        proxy_pass_reverse: { get_param: proxy_pass_reverse }
+
+outputs:
+  config_status:
+    value: { get_attr: [config_deployment, status] }
+
+  config_stderr:
+    value: { get_attr: [config_deployment, deploy_stderr] }

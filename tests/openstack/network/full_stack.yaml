@@ -1,6 +1,6 @@
 heat_template_version: 2015-10-15
 
-description: Template to create a network with router and subnet
+description: Template to test a fullstack network with router and subnet
 
 parameters:
 
@@ -15,6 +15,7 @@ parameters:
     description: The IP subnet to use in CIDR notation
     constraints:
       - custom_constraint: net_cidr
+    default: 192.168.0.0/24
 
   dns_nameservers:
     type: comma_delimited_list
@@ -47,7 +48,7 @@ resources:
     type: HeatLib::Network::Subnet
     properties:
       name: { get_param: name}
-      router_id: { get_attr: [ network, router_uuid ] }
+      router_id: { get_attr: [ router, router_uuid ] }
       cidr: { get_param: cidr }
       dns_nameservers: { get_param: dns_nameservers }
       host_routes: { get_param: host_routes }

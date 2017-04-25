@@ -16,6 +16,8 @@ resource_registry:
   "HeatLib::SecurityGroups::ICMP":                  ../lib/openstack/security-groups/icmp.yaml
 
   # Networks
+  "HeatLib::Network::Router":                       ../lib/openstack/network/router.yaml
+  "HeatLib::Network::Subnet":                       ../lib/openstack/network/subnet.yaml
   "HeatLib::Network::FullStack":                    ../lib/openstack/network/full_stack.yaml
   "HeatLib::Network::FloatingIP":                   ../lib/openstack/network/floating_ip.yaml
 

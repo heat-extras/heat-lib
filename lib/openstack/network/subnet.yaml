@@ -1,0 +1,146 @@
+heat_template_version: 2015-10-15
+
+description: Template to create a subnet and attach it to a router
+
+parameters:
+
+  name:
+    type: string
+    description: Name to be used for network and subnet
+    constraints:
+      - allowed_pattern: "[a-z][a-z0-9-]{1,}"
+
+  cidr:
+    type: string
+    description: The IP subnet to use in CIDR notation
+    constraints:
+      - custom_constraint: net_cidr
+
+  dns_nameservers:
+    type: comma_delimited_list
+    description: A list of DNS servers to propagate via DHCP
+    default:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  host_routes:
+    type: json
+    description: A list of host routes to propagate in the subnet
+    default: []
+
+  router_id:
+    label: Router to attatch to
+    type: string
+    constraints:
+      - custom_constraint: neutron.router
+
+resources:
+
+  network:
+    type: OS::Neutron::Net
+    properties:
+      name:
+        list_join: ['-', [{ get_param: name }, 'net']]
+
+  subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name:
+        list_join: ['-', [{ get_param: name }, 'sub']]
+      network_id: { get_resource: network }
+      cidr: { get_param: cidr }
+      dns_nameservers: { get_param: dns_nameservers }
+      host_routes: { get_param: host_routes }
+      ip_version: 4
+
+  router_interface_add:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_param: router_id }
+      subnet_id: { get_resource: subnet }
+
+outputs:
+
+  network_uuid:
+    description: Network UUID
+    value: { get_resource: network }
+
+  network_admin_state_up:
+    description: The administrative status of the network
+    value: { get_attr: [ network, admin_state_up ] }
+
+  network_mtu:
+    description: The maximum transmission unit size(in bytes) for the network.
+    value: { get_attr: [ network, mtu ] }
+
+  network_name:
+    description: The name of the network.
+    value: { get_attr: [ network, name ] }
+
+  network_port_security_enabled:
+    description: Port security enabled of the network.
+    value: { get_attr: [ network, port_security_enabled ] }
+
+  network_show:
+    description: Detailed information about resource.
+    value: { get_attr: [ network, show ] }
+
+  network_status:
+    description: The status of the network.
+    value: { get_attr: [ network, status] }
+
+  network_subnets:
+    description: Subnets of this network.
+    value: { get_attr: [ network, subnets ] }
+
+  network_tenant_id:
+    description: The tenant owning this network.
+    value: { get_attr: [ network, tenant_id ] }
+
+  subnet_uuid:
+    description: Subnet UUID
+    value: { get_resource: subnet }
+
+  subnet_allocation_pools:
+    description: Ip allocation pools and their ranges.
+    value: { get_attr: [ subnet, allocation_pools ] }
+
+  subnet_cidr:
+    description: CIDR block notation for this subnet.
+    value: { get_attr: [ subnet, cidr ] }
+
+  subnet_dns_nameservers:
+    description: List of dns nameservers.
+    value: { get_attr: [ subnet, dns_nameservers ] }
+
+  subnet_enable_dhcp:
+    description: true if DHCP is enabled for this subnet, false otherwise.
+    value: { get_attr: [ subnet, enable_dhcp ] }
+
+  subnet_gateway_ip:
+    description: Ip of the subnet's gateway.
+    value: { get_attr: [ subnet, gateway_ip ] }
+
+  subnet_host_routes:
+    description: Additional routes for this subnet.
+    value: { get_attr: [ subnet, host_routes ] }
+
+  subnet_ip_version:
+    description: Ip version for the subnet.
+    value: { get_attr: [ subnet, ip_version ] }
+
+  subnet_name:
+    description: Friendly name of the subnet.
+    value: { get_attr: [ subnet, name ] }
+
+  subnet_network_id:
+    description: Parent network of the subnet.
+    value: { get_attr: [ subnet, network_id ] }
+
+  subnet_show:
+    description: Detailed information about resource.
+    value: { get_attr: [ subnet, show ] }
+
+  subnet_tenant_id:
+    description: Tenant owning the subnet.
+    value: { get_attr: [ subnet, tenant_id ] }

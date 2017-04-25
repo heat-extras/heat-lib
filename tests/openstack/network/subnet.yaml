@@ -1,6 +1,6 @@
 heat_template_version: 2015-10-15
 
-description: Template to create a network with router and subnet
+description: Template to test a subnet and attach it to a router
 
 parameters:
 
@@ -15,6 +15,7 @@ parameters:
     description: The IP subnet to use in CIDR notation
     constraints:
       - custom_constraint: net_cidr
+    default: 192.168.0.0/24
 
   dns_nameservers:
     type: comma_delimited_list
@@ -40,50 +41,22 @@ resources:
     type: HeatLib::Network::Router
     properties:
       name: { get_param: name }
-      external_gateway_info:
-        network: { get_param: external_network }
+      external_network: { get_param: external_network }
 
   network:
     type: HeatLib::Network::Subnet
     properties:
       name: { get_param: name}
-      router_id: { get_attr: [ network, router_uuid ] }
+      router_id: { get_attr: [ router, router_uuid ] }
       cidr: { get_param: cidr }
       dns_nameservers: { get_param: dns_nameservers }
       host_routes: { get_param: host_routes }
 
 outputs:
-  router_uuid:
-    description: Router UUID
-    value: { get_attr: [ router, router_uuid ] }
-
-  router_admin_state_up:
-    description: Administrative state of the router.
-    value: { get_attr: [ router, router_admin_state_up ] }
-
-  router_external_gateway_info:
-    description: Gateway network for the router.
-    value: { get_attr: [ router, router_external_gateway_info ] }
-
-  router_name:
-    description: Friendly name of the router.
-    value: { get_attr: [ router, router_name ] }
-
-  router_show:
-    description: Detailed information about resource.
-    value: { get_attr: [ router, router_show ] }
-
-  router_status:
-    description: The status of the router.
-    value: { get_attr: [ router, router_status ] }
-
-  router_tenant_id:
-    description: Tenant owning the router.
-    value: { get_attr: [ router, router_tenant_id ] }
 
   network_uuid:
     description: Network UUID
-    value: { get_attr: [ network, network_uuid ] }
+    value: { get_attr: [ network, network_uuid] }
 
   network_admin_state_up:
     description: The administrative status of the network

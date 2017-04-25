@@ -1,0 +1,56 @@
+heat_template_version: 2015-10-15
+
+description: Template to create a router
+
+parameters:
+
+  name:
+    type: string
+    description: Name to be used for network and subnet
+    constraints:
+      - allowed_pattern: "[a-z][a-z0-9-]{1,}"
+
+  external_network:
+    label: Network ID for public network
+    type: string
+    constraints:
+      - custom_constraint: neutron.network
+
+resources:
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+      name:
+        list_join: ['-', [{ get_param: name }, 'router']]
+      external_gateway_info:
+        network: { get_param: external_network }
+
+outputs:
+  router_uuid:
+    description: Router UUID
+    value: { get_resource: router }
+
+  router_admin_state_up:
+    description: Administrative state of the router.
+    value: { get_attr: [ router, admin_state_up ] }
+
+  router_external_gateway_info:
+    description: Gateway network for the router.
+    value: { get_attr: [ router, external_gateway_info ] }
+
+  router_name:
+    description: Friendly name of the router.
+    value: { get_attr: [ router, name ] }
+
+  router_show:
+    description: Detailed information about resource.
+    value: { get_attr: [ router, show ] }
+
+  router_status:
+    description: The status of the router.
+    value: { get_attr: [ router, status ] }
+
+  router_tenant_id:
+    description: Tenant owning the router.
+    value: { get_attr: [ router, tenant_id ] }

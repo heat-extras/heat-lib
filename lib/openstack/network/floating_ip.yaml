@@ -1,5 +1,7 @@
 heat_template_version: 2015-10-15
 
+description: Template to assign a floating IP to a port.
+
 parameters:
 
   external_network:

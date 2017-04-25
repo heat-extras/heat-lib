@@ -90,7 +90,7 @@ resources:
     type: OS::Heat::SoftwareDeploymentGroup
     properties:
       config: { get_resource: software_config }
-      servers: { get_attr: [ basic_cluster_with_software_deployment, cluster_attributes_uuid] }
+      servers: { get_attr: [ basic_cluster_with_software_deployment, cluster_instances_uuids] }
       signal_transport: HEAT_SIGNAL
 
   basic_cluster_1:
@@ -137,10 +137,10 @@ resources:
 outputs:
 
   basic_cluster_1:
-    value: { get_attr: [basic_cluster_1, refs] }
+    value: { get_attr: [basic_cluster_1, cluster_instances_refs] }
 
   basic_cluster_2:
-    value: { get_attr: [basic_cluster_2, refs] }
+    value: { get_attr: [basic_cluster_2, cluster_instances_refs] }
 
   basic_cluster_with_software_deployment:
-    value: { get_attr: [basic_cluster_with_software_deployment, cluster_attributes_refs] }
+    value: { get_attr: [basic_cluster_with_software_deployment, cluster_instances_refs] }

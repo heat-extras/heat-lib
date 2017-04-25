@@ -85,18 +85,22 @@ resources:
 
 outputs:
 
-  cluster_attributes_name:
-    description: Names of the resources in the cluster
-    value: { get_attr: [ cluster_instances, attributes, instance_name ] }
+  cluster_instances_refs:
+    description: References of the resources in the cluster
+    value: { get_attr: [ cluster_instances, attributes, instance_refs ] }
 
-  cluster_attributes_uuid:
-    description: UUIDs of the resources in the cluster
+  cluster_instances_show:
+    description: Full details of the cluster
+    value: { get_attr: [ cluster_instances, instance_show ] }
+
+  cluster_instances_attributes_id:
+    value: { get_attr: [ cluster_instances, attributes, id ] }
+
+  cluster_instances_uuids:
     value: { get_attr: [ cluster_instances, attributes, instance_uuid ] }
 
-  refs:
-    description: References of the resources in the cluster
-    value: { get_attr: [ cluster_instances, refs ] }
+  cluster_instances_names:
+    value: { get_attr: [ cluster_instances, instance_name ] }
 
-  show:
-    description: Full details of the cluster
-    value: { get_attr: [ cluster_instances, show ] }
+  cluster_instances_first_addresses:
+    value: { get_attr: [ cluster_instances, instance_first_address ] }

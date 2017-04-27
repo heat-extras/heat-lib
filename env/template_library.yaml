@@ -16,6 +16,8 @@ resource_registry:
   "HeatLib::SecurityGroups::ICMP":                  lib/openstack/security-groups/icmp.yaml
 
   # Networks
+  "HeatLib::Network::Router":                       ../lib/openstack/network/router.yaml
+  "HeatLib::Network::Subnet":                       ../lib/openstack/network/subnet.yaml
   "HeatLib::Network::FullStack":                    lib/openstack/network/full_stack.yaml
   "HeatLib::Network::FloatingIP":                   lib/openstack/network/floating_ip.yaml
 
@@ -27,6 +29,8 @@ resource_registry:
 
   # Cluster 
   "HeatLib::Cluster::Basic":                        ../lib/openstack/cluster/basic_cluster.yaml
+  "HeatLib::Cluster::WithVolumes":                  ../lib/openstack/cluster/basic_cluster_with_volumes.yaml
+  "HeatLib::Cluster::VolumeBoot":                   ../lib/openstack/cluster/basic_cluster_boot_volume.yaml
 
   #####
   ## OS Specific Software Configuration Resources
@@ -48,8 +52,6 @@ resource_registry:
   "HeatLib::SoftwareConfig::Tomcat":                lib/software-configs/XXX/tomcat.yaml
   "HeatLib::SoftwareConfig::EPEL":                  lib/software-configs/XXX/epel.yaml
   "HeatLib::SoftwareConfig::x2goserver":            lib/software-configs/XXX/x2goserver.yaml
-  "HeatLib::SoftwareConfig::Docker":                lib/software-configs/XXX/docker.yaml
-  "HeatLib::SoftwareConfig::Docker::Cloudera":      lib/software-configs/XXX/docker_cloudera.yaml
   "HeatLib::SoftwareConfig::Reboot":                lib/software-configs/XXX/reboot.yaml
   "HeatLib::SoftwareConfig::ClouderaManager":       lib/software-configs/XXX/cloudera_manager.yaml
 

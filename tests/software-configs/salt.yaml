@@ -164,13 +164,18 @@ resources:
     properties:
       group: salt
       config: |
-        httpd:
+        webserver:
           pkg.installed:
             {% if grains['os_family'] == 'RedHat' %}
             - name: httpd
             {% elif grains['os_family'] == 'Debian' %}
             - name: apache2
             {% endif %}
+        {% if grains['os_family'] == 'RedHat' %}
+        httpd:
+        {% elif grains['os_family'] == 'Debian' %}
+        apache2:
+        {% endif %}
           service.running:
             - enable: True
         /var/www/html/index.html:

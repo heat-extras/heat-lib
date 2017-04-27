@@ -40,8 +40,7 @@ resources:
     type: HeatLib::Network::Router
     properties:
       name: { get_param: name }
-      external_gateway_info:
-        network: { get_param: external_network }
+      external_network: { get_param: external_network }
 
   network:
     type: HeatLib::Network::Subnet

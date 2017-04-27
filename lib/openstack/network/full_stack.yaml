@@ -46,7 +46,7 @@ resources:
     type: HeatLib::Network::Subnet
     properties:
       name: { get_param: name}
-      router_id: { get_attr: [ network, router_uuid ] }
+      router_id: { get_attr: [ router, router_uuid ] }
       cidr: { get_param: cidr }
       dns_nameservers: { get_param: dns_nameservers }
       host_routes: { get_param: host_routes }

@@ -1,0 +1,61 @@
+### Enviroment File for rhel based images
+
+resource_registry:
+
+  #####
+  ## Openstack
+  #####
+  # Instances
+  "HeatLib::Instance::Basic":                       https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/instance/basic_instance.yaml
+  "HeatLib::Instance::VolumeBoot":                  https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/instance/basic_instance_boot_volume.yaml
+  "HeatLib::Instance::WithVolumes":                 https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/instance/basic_instance_with_volumes.yaml
+  "HeatLib::Instance::LoadBalanced":                https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/instance/loadbalanced_instance.yaml
+
+  # SecurityGroups
+  "HeatLib::SecurityGroups::Generic":               https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/security-groups/generic.yaml
+  "HeatLib::SecurityGroups::ICMP":                  https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/security-groups/icmp.yaml
+
+  # Networks
+  "HeatLib::Network::Router":                       https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/network/router.yaml
+  "HeatLib::Network::Subnet":                       https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/network/subnet.yaml
+  "HeatLib::Network::FullStack":                    https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/network/full_stack.yaml
+  "HeatLib::Network::FloatingIP":                   https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/network/floating_ip.yaml
+
+  # LoadBalancer
+  "HeatLib::LoadBalancer::V1":                      https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/loadbalancer/tcp_lbaas_v1.yaml
+
+  # Volumes
+  "HeatLib::Volume::Basic":                         https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/volume/basic_volume.yaml
+
+  # Clusters
+  "HeatLib::Cluster::Basic":                        https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/cluster/basic_cluster.yaml
+  "HeatLib::Cluster::WithVolumes":                  https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/cluster/basic_cluster_with_volumes.yaml
+  "HeatLib::Cluster::VolumeBoot":                   https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/openstack/cluster/basic_cluster_boot_volume.yaml
+
+  #####
+  ## OS Specific Software Configuration Resources
+  #####
+  "HeatLib::SoftwareConfig::VolumeMount":           https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/volume_mount.yaml
+  "HeatLib::SoftwareConfig::DisableSelinux":        https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/disable_selinux.yaml
+  "HeatLib::SoftwareConfig::SSHAuthPassword":       https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/ssh_auth_password.yaml
+  "HeatLib::SoftwareConfig::User":                  https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/user.yaml
+  "HeatLib::SoftwareConfig::HTTP":                  https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/httpd.yaml
+  "HeatLib::SoftwareConfig::HTTP::ReverseProxy":    https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/httpd_reverse_proxy.yaml
+  "HeatLib::SoftwareConfig::MySQL":                 https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/mysql.yaml
+  "HeatLib::SoftwareConfig::PostgreSQL":            https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/postgres.yaml
+  "HeatLib::SoftwareConfig::Latex":                 https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/latex.yaml
+  "HeatLib::SoftwareConfig::NodeJS":                https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/nodejs.yaml
+  "HeatLib::SoftwareConfig::R":                     https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/r.yaml
+  "HeatLib::SoftwareConfig::RServer":               https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/rserver.yaml
+  "HeatLib::SoftwareConfig::RDesktop":              https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/rserver.yaml
+  "HeatLib::SoftwareConfig::Java":                  https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/java.yaml
+  "HeatLib::SoftwareConfig::Tomcat":                https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/tomcat.yaml
+  "HeatLib::SoftwareConfig::EPEL":                  https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/epel.yaml
+  "HeatLib::SoftwareConfig::x2goserver":            https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/x2goserver.yaml
+  "HeatLib::SoftwareConfig::Reboot":                https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/reboot.yaml
+  "HeatLib::SoftwareConfig::ClouderaManager":       https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/software-configs/rhel/cloudera_manager.yaml
+
+  #####
+  ## OS Speciffic  Heat Config Agent Cloud-init Install Script
+  #####
+  "Heat::InstallConfigAgent":                   https://raw.githubusercontent.com/heat-extras/heat-lib/master/lib/boot-config/rhel.yaml

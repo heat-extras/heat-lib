@@ -13,6 +13,6 @@ else
   echo "ProxyPassReverse $proxy_pass_reverse" >> $proxy_conf_file
 fi
 
-systemctl restart httpd.service
+systemctl reload httpd.service
 
 echo "Success" > $heat_outputs_path.status

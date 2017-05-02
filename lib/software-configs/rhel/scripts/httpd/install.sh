@@ -14,7 +14,7 @@ else
 fi
 
 yum -y install httpd mod_ssl openssl
-chkconfig httpd on
+systemctl enable httpd.service
 
 # Insert Script Here
 echo "Success" > $heat_outputs_path.status

@@ -70,6 +70,10 @@ This repository contains the following folders:
   software configurations, in the form of Heat templates and scripts
 * env - this folder contains OS specific Heat `environment files
   <https://docs.openstack.org/developer/heat/template_guide/environment.html>`_
+  that point to local repo files
+* env-ext - this folder contains OS specific Heat `environment files
+  <https://docs.openstack.org/developer/heat/template_guide/environment.html>`_
+  that point to remote files (in this github repo) 
 * tests - this folder contains various Heat templates that use the components
   in the Lib directory to test their functionality
 
@@ -163,6 +167,19 @@ technically the openstack components could be their own environment file,
 however this decision was made in order to allow for the simple reference of
 only one environment file when using this library, especially since in most
 cases the user will use another environment file for parameters, etc.
+
+Lastly, these enviroment files point to local file paths, meaning that if the
+reader would like to use these enviroment files, they'd have to download the 
+whole repo. 
+
+env-ext
+-------
+
+The structure of this folder is the exact same as *env/*, the only difference 
+being that instead of pointing to local files paths, these enviroment files 
+are using URLs that point to files hosted on gitHub. This means that in order
+for the reader to use this library, the only thing they'd have to do is 
+download these files and have network access to github.
 
 tests
 -----
